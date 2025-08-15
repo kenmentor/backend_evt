@@ -13,8 +13,9 @@ class house_repo extends crudRepositoryExtra {
     }
 
     try {
-      const data = await this.module.findById(id);
-
+      console.log(id)
+      const data = await this.module.findById(Object(id));
+console.log(data)
       if (!data) {
         throw new Error("Resource not found");
       }

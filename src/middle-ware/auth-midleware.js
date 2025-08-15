@@ -36,7 +36,7 @@ function login_user(req, res, next) {
   console.log(2, body)
   if (!body.password) {
     const badResponse = response.badResponse;
-    badResponse.message = "phoneNumber is required ";
+    badResponse.message = "Password is required ";
     badResponse.status = 400;
     console.log(3, body)
     return res.status(400).json(badResponse);

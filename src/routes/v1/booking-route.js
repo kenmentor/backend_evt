@@ -14,6 +14,6 @@ router.post(
 // geting booking details
 router.get("/:userId/:bookingId", booking_middleware.CookieValidity, booking_controller.get_booking_details);
 //host://v1/booking/houseId
-// getting all booking with the guest id
+// getting all booking with the guest/host id
 router.get("/:userId", booking_middleware.CookieValidity, booking_controller.get_all_booking);
 module.exports = router;

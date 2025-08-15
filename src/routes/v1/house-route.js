@@ -7,7 +7,7 @@ const { house_controller } = require("../../controllers");
 const { house_middleware, upload_molter } = require("../../middle-ware");
 
 //v1/house_deatail (for getting house details with id )
-router.get("/deatail/:id", house_controller.get_house_detail);
+router.get("/detail/:id", house_controller.get_house_detail);
 
 //v1/house/ (get list of houses)
 router.get("/", house_controller.get_house);

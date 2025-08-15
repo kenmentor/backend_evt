@@ -68,7 +68,9 @@ async function update_house_view(req, res) {
 async function upload_house(req, res) {
   try {
     const { files, body, user } = req;
-    console.log("UPLOAD CONTROLLER ")
+
+    console.log(body ,"fjbbjbjbjjb")
+    
     const data = await house_service.upload_house(files, body, user);
 
     res.status(200).json({

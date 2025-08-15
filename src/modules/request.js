@@ -17,11 +17,11 @@ const requestSchema = new mongoose.Schema(
       ref: "Resource",
       required: true,
     },
-    status: {
-      type: String,
-      required: true,
-      defualt: "pending",
-    },
+  accepted:{
+    type:Boolean,
+    default:false
+  }
+    
   },
   { timestamps: true }
 );

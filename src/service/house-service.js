@@ -17,7 +17,7 @@ async function update_house(object) {
 }
 
 async function get_details(id) {
-  await connectDB();
+
   return newcrudRepositoryExtra.getDetail(id);
 }
 

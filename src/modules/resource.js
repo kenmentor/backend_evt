@@ -32,6 +32,8 @@ const resourceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+
+
 // Add indexes for fast queries
 resourceSchema.index({ location: "text", type: "text", category: "text" }); // Full-text search
 module.exports = mongoose.model("Resource", resourceSchema);

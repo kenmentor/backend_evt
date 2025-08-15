@@ -48,6 +48,7 @@ function get_all_booking(id, role) {
   if (role == "host") {
     return Booking_repo.find({ host: Object(id) });
   }
+  return[]
 }
 
 function get_booking_details(object, role) {
@@ -59,7 +60,7 @@ function get_booking_details(object, role) {
   if (role == "host") {
     return Booking_repo.findOne({ _id: object.bookingId, host: object.userId });
   }
-  return ("helo helo ")
+  return {}
 }
 
 module.exports = {

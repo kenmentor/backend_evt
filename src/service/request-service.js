@@ -22,9 +22,19 @@ async function create_request(object) {
 function delete_request(id) {
   return Request_repo.delete(id);
 }
-function get_all_request(id) {
+function get_all_request(userId,role) {
   try {
-    return Request_repo.find({ guest: Object(id) });
+    if(role == "guest"){
+        return Request_repo.find({ guest: Object(userId) });
+    }
+    if(role == "geust"){
+        return Request_repo.find({ guest: Object(userId) });
+    }
+    if(role == "host"){
+       return Request_repo.find({ host: Object(userId) });
+    }
+    return ["hello"]
+   
   } catch (error) {
     throw error
   }
@@ -32,7 +42,22 @@ function get_all_request(id) {
 }
 
 function get_request_details(id) {
+  try{
   return Request_repo.findById(id);
+  }catch(error){
+    console.log(error)
+    return null
+  }
+}
+async function alreadyExit(object){
+  console.log(object , "this is th object" )
+ try{
+  return Request_repo.findOne(object)
+  }catch(error){
+    console.log(error)
+    return null
+  }
+
 }
 async function update_request(id, object) {
   data = await Request_repo.update(Object(id), object)
@@ -44,5 +69,6 @@ module.exports = {
   delete_request: delete_request,
   get_all_request: get_all_request,
   get_request_details: get_request_details,
-  update_request: update_request
+  update_request: update_request,
+  alreadyExit
 };

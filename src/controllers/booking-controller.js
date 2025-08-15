@@ -26,6 +26,7 @@ async function get_booking_details(req, res) {
 }
 /// getting all booking that has the userid
 async function get_all_booking(req, res) {
+  console.log( req.query.role,req.params.userId)
   const role = req.query.role
   try {
     const userId = req.params.userId

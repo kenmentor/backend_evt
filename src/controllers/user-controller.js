@@ -114,7 +114,7 @@ async function signup_user(req, res) {
   /////CHECK IF USER EXIST 
   const alreadyExist = await user_service.find_user({
     email: email,
-    verifiedEmail: false
+    // verifiedEmail: false
 
   });
 
