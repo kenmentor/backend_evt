@@ -10,7 +10,7 @@ const app = express();
 // ✅ CORS and cookies first
 app.use(
   cors({
-    origin: "https://agent-with-me-frountend.vercel.app/", // remove space before http
+    origin: "https://agent-with-me-frountend.vercel.app", // remove space before http
     credentials: true,
   })
 );
