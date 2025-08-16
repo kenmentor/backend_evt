@@ -1,3 +1,5 @@
+
+
 module.exports = {
   house_service: require("./house-service"),
   user_service: require("./user-service"),
@@ -6,4 +8,5 @@ module.exports = {
   requst_service:require("./request-service"),
   auth_service:require("./auth-service"),
   verification_service: require("./complete-verification-service"),
+  paymentService:require("./payment-service")
 };

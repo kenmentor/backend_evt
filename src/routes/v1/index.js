@@ -27,5 +27,6 @@ router.use("/booking", booking_route);
 console.log("done 6");
 router.use("/request", request_route)
 router.use("/user", user_route)
+router.use("/payment",payment_route)
 
 module.exports = router;

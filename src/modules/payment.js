@@ -46,5 +46,5 @@ const paymentSchema = new mongoose.Schema(
 );
 
 // Add indexes for fast queries
-resourceSchema.index({ location: "text", type: "text", category: "text" }); // Full-text search
+paymentSchema.index({ location: "text", type: "text", category: "text" }); // Full-text search
 module.exports = mongoose.model("Payment", paymentSchema);

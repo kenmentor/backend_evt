@@ -10,18 +10,17 @@ const app = express();
 // ✅ CORS and cookies first
 app.use(
   cors({
-    origin: "http://localhost:3000", // remove space before http
-    credentials: true
+    origin: "https://agent-with-me-frountend.vercel.app/", // remove space before http
+    credentials: true,
   })
 );
-app.use(express.json())
+app.use(express.json());
 app.use(cookieParser());
 
 // ✅ Register routes BEFORE json parser
 app.use("/", route);
 
 // ✅ Only apply json parser AFTER file upload routes
-
 
 // ✅ Optional: apply urlencoded after json if needed
 // app.use(express.urlencoded({ extended: true }));
