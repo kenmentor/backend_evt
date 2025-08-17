@@ -119,6 +119,7 @@ async function signup_user(req, res) {
     role = "geust",
     phoneNumber,
     dateOfBirth,
+    userName,
   } = req.body;
   /////CHECK IF USER EXIST
   const alreadyExist = await user_service.find_user({
@@ -141,6 +142,7 @@ async function signup_user(req, res) {
       role,
       phoneNumber,
       dateOfBirth,
+      userName,
     });
 
     // generateTokenAndSetCookie(res, data._id.toString());

@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 function user_update(req, res, next) {
-  userCookieVerify(req, req)
+  userCookieVerify(req, req);
   const { body } = req;
   if (!body.phoneNumber) {
     const badResponse = response.badResponse;
@@ -31,6 +31,12 @@ function user_create(req, res, next) {
     badResponse.status = 500;
     return res.status(500).json(badResponse);
   }
+  if (!body.userName) {
+    const badResponse = response.badResponse;
+    badResponse.message = "userName is required ";
+    badResponse.status = 500;
+    return res.status(500).json(badResponse);
+  }
   if (!body.email) {
     const badResponse = response.badResponse;
     badResponse.message = "email is required ";
@@ -49,7 +55,7 @@ function user_create(req, res, next) {
 
 function user_delete(req, res, next) {
   try {
-    userCookieVerify(req, req)
+    userCookieVerify(req, req);
 
     next();
   } catch (error) {
@@ -58,8 +64,8 @@ function user_delete(req, res, next) {
   }
 }
 function CookieValidity(req, res, next) {
-  userCookieVerify(req, res)
-  next()
+  userCookieVerify(req, res);
+  next();
 }
 module.exports = {};
 
@@ -67,5 +73,5 @@ module.exports = {
   user_update,
   user_delete,
   user_create,
-  CookieValidity
+  CookieValidity,
 };
