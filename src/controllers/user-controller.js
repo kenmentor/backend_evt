@@ -60,6 +60,7 @@ function logout_user(req, res) {
   const { goodResponse } = response;
 
   res.clearCookie("token");
+  res.clearCookie("isAuth");
   goodResponse.message = " logut succesful ";
   return res.json(goodResponse);
 }
