@@ -13,8 +13,9 @@ module.exports = (res, userId) => {
   res.cookie("isAuth", true, {
     httpOnly: false,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    maxAge: 30 * 24 * 60 * 60 * 1000, //30day
+    sameSite: "none",
+    domain: "https://agent-with-me-backend.onrender.com", // important!
+    path: "/",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
   });
-  return token;
 };
