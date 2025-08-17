@@ -201,7 +201,7 @@ r`;
 // </html>
 
 module.exports = {
-  sucessEmail: suceesEmail,
+  sucessEmail: successEmail,
   forgetPasswordEmail: forgetPasswordEmail,
   verificationEmail: verificationEmail,
   welcomeEmail: successEmail,
