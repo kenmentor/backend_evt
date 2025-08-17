@@ -9,8 +9,8 @@ router.put(
   user_middleware.user_update,
   user_controller.edit_user_detail
 );
+router.get("/pioneer", user_controller.pioneer);
 router.get("/:id", user_controller.get_user);
 router.get("/", user_controller.find_users);
-router.get("/pioneer", user_controller.pioneer);
 
 module.exports = router;

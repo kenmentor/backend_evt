@@ -202,12 +202,14 @@ async function find_users(req, res) {
   }
 }
 async function pioneer(req, res) {
+  console.log("hhhhhhhhhhhhhhhhhhhhhhhhh");
   try {
-    const data = await user_service.find_users({
+    const data = await user_service.filter({
       pioneer: true,
     });
     const responseData = response.goodResponse;
     responseData.data = data;
+    console.log(data);
     return res.json(responseData).status(200);
   } catch (error) {
     const responseData = response.badResponse;
