@@ -38,9 +38,7 @@ async function update_house_view(id) {
 
 // const resourceDB = require("../models/resource");
 // const connectDB = require("../config/db");
-console.log(
-  " 1 lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllele"
-);
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -98,7 +96,7 @@ async function upload_house(files, body, user) {
   body.electricity = Number(body.electricity);
   body.price = Number(body.price);
   body.waterSuply = Boolean(body.waterSuply);
-  body.host = Object(body.host);
+  // body.host = Object(body.host);
 
   const data = await newcrudRepositoryExtra.create(body);
   data.save();

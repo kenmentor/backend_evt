@@ -9,10 +9,9 @@ class crudRepositoryExtra {
 
   async updateAny(object) {
     try {
-      this.module
+      this.module;
       const verifiedUser = await this.module.findOneAndUpdate(object);
       return verifiedUser;
-
     } catch (error) {
       console.error("Error fetching data from DB:", error);
     }
@@ -48,16 +47,14 @@ class crudRepositoryExtra {
   async findById(id) {
     console.log(id);
 
-
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new Error("ID is not valid");
     }
 
-    console.log(id,'one');
+    console.log(id, "one");
     try {
       const data = await this.module.findById(id);
-      console.log(id,'two');
+      console.log(id, "two");
       console.log(data);
       if (!data) {
         throw new Error("Resource not found");
@@ -71,8 +68,9 @@ class crudRepositoryExtra {
   }
 
   async create(object) {
+    const count = await this.module.countDocuments();
     try {
-      const newmodule = new this.module(object);
+      const newmodule = new this.module({ ...object, pioneer: count < 100 });
       const data = await newmodule.save();
       return data;
     } catch (err) {
@@ -90,8 +88,7 @@ class crudRepositoryExtra {
     }
   }
   async findOne(object) {
-    return await this.module.findOne(object)
+    return await this.module.findOne(object);
   }
-
 }
 module.exports = crudRepositoryExtra;

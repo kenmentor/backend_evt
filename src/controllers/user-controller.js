@@ -1,7 +1,7 @@
 const { response, mailer } = require("../utility");
 const { user_service, verification_service } = require("../service");
 require("dotenv").config();
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
 const { generateTokenAndSetCookie } = require("../utility");
 const bcrypt = require("bcryptjs/dist/bcrypt");
@@ -13,7 +13,6 @@ async function get_user(req, res) {
   try {
     // Validate MongoDB ObjectId
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-
       return res.status(400).json({ message: "Invalid ID format" });
     }
 
@@ -37,7 +36,6 @@ async function get_user(req, res) {
   }
 }
 
-
 async function edit_user_detail(req, res) {
   try {
     const id = await req.params.id;
@@ -52,7 +50,6 @@ async function edit_user_detail(req, res) {
     responseData.message = "usefully edited your profil ";
     responseData.data = data;
     return res.json(responseData);
-
   } catch (err) {
     const responseData = response.badResponse;
     responseData.message = `something went wrong ${err}`;
@@ -60,11 +57,11 @@ async function edit_user_detail(req, res) {
   }
 }
 function logout_user(req, res) {
-  const { goodResponse } = response
+  const { goodResponse } = response;
 
   res.clearCookie("token");
-  goodResponse.message = " logut succesful "
-  return res.json(goodResponse)
+  goodResponse.message = " logut succesful ";
+  return res.json(goodResponse);
 }
 async function login_user(req, res) {
   const { body } = await req;
@@ -73,73 +70,84 @@ async function login_user(req, res) {
   const password = body.password;
   console.log("process have  started   ", email, password);
   try {
-    const data = await verification_service.login_user(password, email, api_key);
+    const data = await verification_service.login_user(
+      password,
+      email,
+      api_key
+    );
     const responseData = response.goodResponse;
     responseData.data = data;
     if (data) {
-      generateTokenAndSetCookie(res, data._id)
-      console.log(data, "1")
+      generateTokenAndSetCookie(res, data._id);
+      console.log(data, "1");
 
       const responseData = response.goodResponse;
-      responseData.message = "user succefully logged"
+      responseData.message = "user succefully logged";
       return res.status(responseData.status).json(responseData);
     }
     const resp = response.badResponse;
-    resp.message = "user not found or not verified"
+    resp.message = "user not found or not verified";
     return res.status(resp.status).json(resp);
-
   } catch (erro) {
-
     const responseData = response.badResponse;
     responseData.erro = erro;
-    responseData.message = erro.messages
+    responseData.message = erro.messages;
     return res.json(responseData);
   }
 }
 async function forgot_password(req, res) {
   const { email } = req.body;
-  const { goodResponse, badResponse } = response
+  const { goodResponse, badResponse } = response;
   try {
-    const data = await user_service.forgot_password(email)
-    return res.json(goodResponse.data = data)
+    const data = await user_service.forgot_password(email);
+    return res.json((goodResponse.data = data));
   } catch (error) {
-
     console.error("Error fetching data from DB:", error);
     badResponse.message = error.message;
     return res.status(500).json(badResponse);
   }
 }
 async function signup_user(req, res) {
-  const { email, password, role = "geust", phoneNumber, dateOfBirth } = req.body;
-  /////CHECK IF USER EXIST 
+  const {
+    email,
+    password,
+    role = "geust",
+    phoneNumber,
+    dateOfBirth,
+  } = req.body;
+  /////CHECK IF USER EXIST
   const alreadyExist = await user_service.find_user({
     email: email,
     // verifiedEmail: false
-
   });
 
   if (alreadyExist) {
-    response.badResponse.message = "this email have been used  "
+    response.badResponse.message = "this email have been used  ";
 
-    response.badResponse.status = 501
-    return res.status(response.badResponse.status).json(response.badResponse)
+    response.badResponse.status = 501;
+    return res.status(response.badResponse.status).json(response.badResponse);
   }
   if (email && password && role && phoneNumber && dateOfBirth) {
-
-    const data = await verification_service.signup_user(
-      { email, password, email, password, role, phoneNumber, dateOfBirth }
-    );
+    const data = await verification_service.signup_user({
+      email,
+      password,
+      email,
+      password,
+      role,
+      phoneNumber,
+      dateOfBirth,
+    });
 
     // generateTokenAndSetCookie(res, data._id.toString());
 
-
     const { goodResponse } = response;
-
 
     return res.status(goodResponse.status).json((goodResponse.data = data));
   }
-  const { goodResponse } = response
-  return res.status(goodResponse.status).json((response.badResponse.message = "all input is required"));
+  const { goodResponse } = response;
+  return res
+    .status(goodResponse.status)
+    .json((response.badResponse.message = "all input is required"));
 }
 // async function verify_user(req, res) {
 //   const { verificationCode } = req.body;
@@ -159,18 +167,17 @@ async function delete_user(req, res) {
     return res.json(responseData);
   } catch (error) {
     const responseData = response.badResponse;
-    responseData.message = error.message
+    responseData.message = error.message;
     return res.json(responseData);
   }
-
 }
 async function find_users(req, res) {
-  const { minAge, maxAge, rule, email, limit, bardge, id, adminVerified } = req.query;
+  const { minAge, maxAge, rule, email, limit, bardge, id, adminVerified } =
+    req.query;
   console.log(req.query);
 
   try {
     const data = await user_service.find_users({
-
       minAge: parseInt(minAge),
       maxAge: parseInt(maxAge),
       rule: rule,
@@ -178,7 +185,7 @@ async function find_users(req, res) {
       limit: parseInt(limit),
       bardge: parseInt(bardge),
       id: id,
-      adminVerified: adminVerified
+      adminVerified: adminVerified,
     });
     const responseData = response.goodResponse;
     responseData.data = data;
@@ -186,31 +193,44 @@ async function find_users(req, res) {
   } catch (error) {
     const responseData = response.badResponse;
     console.error("Error fetching data from DB:", error);
-    return res.status(500).json(responseData.message = error.message);
+    return res.status(500).json((responseData.message = error.message));
+  }
+}
+async function pioneer(req, res) {
+  try {
+    const data = await user_service.find_users({
+      pioneer: true,
+    });
+    const responseData = response.goodResponse;
+    responseData.data = data;
+    return res.json(responseData).status(200);
+  } catch (error) {
+    const responseData = response.badResponse;
+    console.error("Error fetching data from DB:", error);
+    return res.status(500).json((responseData.message = error.message));
   }
 }
 async function reset_password(req, res) {
-  const { badResponse, goodResponse } = response
-  const { token } = req.params
-  const { password } = req.body
+  const { badResponse, goodResponse } = response;
+  const { token } = req.params;
+  const { password } = req.body;
   try {
-    const data = await user_service.reset_password({ token: token, password: password })
+    const data = await user_service.reset_password({
+      token: token,
+      password: password,
+    });
     if (!data) {
-      const resp = badResponse
-      return res.json(resp.message = "no such user found ")
+      const resp = badResponse;
+      return res.json((resp.message = "no such user found "));
     }
-    goodResponse.data = data
-    goodResponse.message = "password succesfully change "
-    return res.json(goodResponse)
-
+    goodResponse.data = data;
+    goodResponse.message = "password succesfully change ";
+    return res.json(goodResponse);
   } catch (error) {
-    console.log(error)
-    return res.json(badResponse.message = error.message)
-
+    console.log(error);
+    return res.json((badResponse.message = error.message));
   }
-
 }
-
 
 module.exports = {
   signup_user,
@@ -222,5 +242,6 @@ module.exports = {
   logout_user,
   forgot_password,
   reset_password,
-  reset_password
+  reset_password,
+  pioneer,
 };

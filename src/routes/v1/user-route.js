@@ -11,5 +11,6 @@ router.put(
 );
 router.get("/:id", user_controller.get_user);
 router.get("/", user_controller.find_users);
+router.get("/pioneer", user_controller.pioneer);
 
 module.exports = router;
