@@ -2,8 +2,9 @@ const { booking_service } = require("../service");
 const { response } = require("../utility");
 // getting booking details
 async function get_booking_details(req, res) {
-  const role = req.query.role
-  const idObject = await req.params; console.log(idObject)
+  const role = req.query.role;
+  const idObject = await req.params;
+  console.log(idObject);
 
   if (!(idObject.userId && idObject.bookingId)) {
     const Response = response.badResponse;
@@ -14,22 +15,21 @@ async function get_booking_details(req, res) {
     console.log("hello ");
     const Response = response.goodResponse;
     const data = await booking_service.get_booking_details(idObject, role);
-    console.log(data)
-    return res.json(Response.data = data);
+    console.log(data);
+    return res.json((Response.data = data));
   } catch (error) {
     const Response = response.badResponse;
-    Response.message = error.message
+    Response.message = error.message;
     console.log(error);
     return res.json(Response);
-
   }
 }
 /// getting all booking that has the userid
 async function get_all_booking(req, res) {
-  console.log( req.query.role,req.params.userId)
-  const role = req.query.role
+  console.log(req.query.role, req.params.userId);
+  const role = req.query.role;
   try {
-    const userId = req.params.userId
+    const userId = req.params.userId;
 
     const Response = response.goodResponse;
     const data = await booking_service.get_all_booking(userId, role);
@@ -39,7 +39,7 @@ async function get_all_booking(req, res) {
   }
 }
 async function create_booking(req, res) {
-  const role = req.query.role
+  const role = req.query.role;
   try {
     const bodyObject = await req.body;
     const Response = response.goodResponse;

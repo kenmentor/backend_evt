@@ -1,5 +1,5 @@
 const { resourceDB } = require("../modules");
-const { house_repository } = require("../repositories");
+const { house_repository, crudRepository } = require("../repositories");
 const { connectDB } = require("../utility");
 const { v2: cloudinary } = require("cloudinary");
 
@@ -17,7 +17,6 @@ async function update_house(object) {
 }
 
 async function get_details(id) {
-
   return newcrudRepositoryExtra.getDetail(id);
 }
 
@@ -36,27 +35,35 @@ async function update_house_view(id) {
 }
 
 // const cloudinary = require("cloudinary").v2;
-// const crudRepositoryExtra = require("../utils/crudRepositoryExtra");
+
 // const resourceDB = require("../models/resource");
 // const connectDB = require("../config/db");
-
+console.log(
+  " 1 lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllele"
+);
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
+console.log(
+  {
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET ? "***" : null,
+  } // Hide secret in log
+);
 async function upload_house(files, body, user) {
   await connectDB();
-  console.log("UPLOAD SERVICE ")
-  console.log(files)
-  console.log(body)
+  console.log("UPLOAD SERVICE ");
+  console.log(files);
+  console.log(body);
   const uploadBufferToCloudinary = (fileBuffer, folder = "default") => {
-
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { folder, resource_type: "auto" },
         (error, result) => {
+          console.log("this is the error", error);
           if (result) resolve(result);
           else reject(error);
         }
@@ -67,7 +74,10 @@ async function upload_house(files, body, user) {
 
   let thumbnailUrl = "";
   if (files.thumbnail?.length > 0) {
-    const result = await uploadBufferToCloudinary(files.thumbnail[0].buffer, "thumbnails");
+    const result = await uploadBufferToCloudinary(
+      files.thumbnail[0].buffer,
+      "thumbnails"
+    );
     thumbnailUrl = result.secure_url;
   }
 
@@ -88,14 +98,12 @@ async function upload_house(files, body, user) {
   body.electricity = Number(body.electricity);
   body.price = Number(body.price);
   body.waterSuply = Boolean(body.waterSuply);
+  body.host = Object(body.host);
 
-  const repo = new crudRepositoryExtra(resourceDB);
-  const data = await repo.create(body);
+  const data = await newcrudRepositoryExtra.create(body);
+  data.save();
   return data;
 }
-
-
-
 
 module.exports = {
   find_house,
