@@ -65,37 +65,41 @@ function logout_user(req, res) {
   return res.json(goodResponse);
 }
 async function login_user(req, res) {
-  const { body } = await req;
-  const email = body.email;
+  const { email, password } = req.body;
   const api_key = process.env.JWT_API_KEY;
-  const password = body.password;
-  console.log("process have  started   ", email, password);
+
+  console.log("Process started:", email, password);
+
   try {
     const data = await verification_service.login_user(
       password,
       email,
       api_key
     );
-    const responseData = response.goodResponse;
-    responseData.data = data;
-    if (data) {
-      generateTokenAndSetCookie(res, data._id);
-      console.log(data, "1");
 
-      const responseData = response.goodResponse;
-      responseData.message = "user succefully logged";
-      return res.status(responseData.status).json(responseData);
+    if (!data) {
+      const resp = {
+        ...response.badResponse,
+        message: "User not found or not verified",
+      };
+      return res.status(resp.status).json(resp);
     }
-    const resp = response.badResponse;
-    resp.message = "user not found or not verified";
+
+    // Generate JWT token and set cookie
+    generateTokenAndSetCookie(res, data._id);
+
+    const resp = {
+      ...response.goodResponse,
+      message: "User successfully logged in",
+      data,
+    };
     return res.status(resp.status).json(resp);
-  } catch (erro) {
-    const responseData = response.badResponse;
-    responseData.erro = erro;
-    responseData.message = erro.messages;
-    return res.json(responseData);
+  } catch (err) {
+    const resp = { ...response.badResponse, message: err.message, error: err };
+    return res.status(resp.status || 500).json(resp);
   }
 }
+
 async function forgot_password(req, res) {
   const { email } = req.body;
   const { goodResponse, badResponse } = response;
