@@ -1,18 +1,23 @@
-const suceesEmail = `<!DOCTYPE html>
+const successEmail = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Signup Successful</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { background-color: #f5f8fa; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+    body {
+      background-color: #f5f8fa;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
     .email-container {
       max-width: 600px;
-      margin: auto;
+      margin: 50px auto;
       background: #ffffff;
       padding: 40px;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.05);
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.05);
       text-align: center;
     }
     .checkmark {
@@ -21,24 +26,29 @@ const suceesEmail = `<!DOCTYPE html>
       margin-bottom: 20px;
     }
     h1 {
-      font-size: 26px;
+      font-size: 28px;
       color: #28a745;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
     p {
       font-size: 16px;
       color: #333;
       line-height: 1.6;
+      margin: 10px 0;
     }
     .btn {
       display: inline-block;
       margin-top: 25px;
-      padding: 12px 30px;
+      padding: 14px 32px;
       background-color: #28a745;
-      color: white;
-      border-radius: 6px;
+      color: #fff;
+      border-radius: 8px;
       text-decoration: none;
       font-weight: bold;
+      transition: background 0.3s;
+    }
+    .btn:hover {
+      background-color: #218838;
     }
     .footer {
       margin-top: 30px;
@@ -52,16 +62,19 @@ const suceesEmail = `<!DOCTYPE html>
     <div class="checkmark">✔</div>
     <h1>Signup Successful!</h1>
     <p>Hi [User's Name],</p>
-    <p>Your account has been successfully created and you're all set to start using <strong>Jotter</strong>.</p>
-    <p>Click the button below to log in and start writing!</p>
-    <a href="https://jotterapp.com/login" class="btn">Log In to Your Account</a>
+    <p>Your account with <strong>Agent With Me</strong> has been successfully created.</p>
+    <p>Click the button below to log in and claim your badge!</p>
+    <a href="https://agent-with-me-frountend.vercel.app/Signup" class="btn">Log In to Your Account</a>
+    <p>Check your name on the First 100 users list here:</p>
+    <a href="https://agent-with-me-frountend.vercel.app/first100" class="btn">See First 100 Users</a>
     <div class="footer">
-      &copy; 2025 Jotter. All rights reserved.
+      &copy; 2025 Agent With Me. All rights reserved.
     </div>
   </div>
 </body>
 </html>
-`
+`;
+
 const forgetPasswordEmail = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -97,7 +110,7 @@ const forgetPasswordEmail = `<!DOCTYPE html>
   </div>
 </body>
 </html>
-`
+`;
 const verificationEmail = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -134,7 +147,7 @@ const verificationEmail = `<!DOCTYPE html>
   </div>
 </body>
 </html>
-`
+`;
 const welcomeEmail = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -161,9 +174,7 @@ const welcomeEmail = `<!DOCTYPE html>
   </div>
 </body>
 </html>
-r`
-
-
+r`;
 
 // <!DOCTYPE html>
 // <html lang="en">
@@ -193,5 +204,5 @@ module.exports = {
   sucessEmail: suceesEmail,
   forgetPasswordEmail: forgetPasswordEmail,
   verificationEmail: verificationEmail,
-  welcomeEmail: welcomeEmail
-}
+  welcomeEmail: successEmail,
+};
