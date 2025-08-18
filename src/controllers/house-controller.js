@@ -2,7 +2,7 @@ const { house_service } = require("../service");
 const { response } = require("../utility");
 
 const get_house_detail = async (req, res) => {
-  console.log("commmmmmmmmm")
+  console.log("commmmmmmmmm");
   try {
     const { id } = req.params;
     if (!id) {
@@ -22,7 +22,7 @@ const get_house_detail = async (req, res) => {
 };
 
 async function get_house(req, res) {
-  console.log("commmmmmmmmm")
+  console.log("commmmmmmmmm");
   const { type, min, max, category, location, limit, bardge, id } = req.query;
   console.log(req.query);
 
@@ -48,7 +48,7 @@ async function get_house(req, res) {
 }
 
 async function update_house_view(req, res) {
-  console.log("commmmmmmmmm")
+  console.log("commmmmmmmmm");
   const id = await req.body.id;
   try {
     const data = await house_service.update_house_view(id);
@@ -63,14 +63,12 @@ async function update_house_view(req, res) {
   }
 }
 
-
-
 async function upload_house(req, res) {
   try {
     const { files, body, user } = req;
 
-    console.log(body ,"fjbbjbjbjjb")
-    
+    console.log(body, "fjbbjbjbjjb");
+
     const data = await house_service.upload_house(files, body, user);
 
     res.status(200).json({
@@ -87,8 +85,6 @@ async function upload_house(req, res) {
   }
 }
 
-
-
 async function update_house(req, res) {
   try {
     const { files, body } = req;
@@ -102,7 +98,7 @@ async function update_house(req, res) {
   }
 }
 async function delete_house(req, res) {
-  console.log("commmmmmmmmm")
+  console.log("commmmmmmmmm");
   const id = await req.body.id;
   const data = await user_service.delete();
   const responseData = response.goodResponse;
