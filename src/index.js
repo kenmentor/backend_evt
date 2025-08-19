@@ -13,6 +13,7 @@ app.use(
     origin: [
       "https://agent-with-me-frountend.vercel.app",
       "http://localhost:3000",
+      "http://localhost:3001",
     ], // remove space before http
     credentials: true,
   })

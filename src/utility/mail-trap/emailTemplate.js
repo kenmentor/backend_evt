@@ -61,7 +61,7 @@ const successEmail = `<!DOCTYPE html>
   <div class="email-container">
     <div class="checkmark">✔</div>
     <h1>Signup Successful!</h1>
-    <p>Hi [User's Name],</p>
+    <p>Hi [UserName],</p>
     <p>Your account with <strong>Agent With Me</strong> has been successfully created.</p>
     <p>Click the button below to log in and claim your badge!</p>
     <a href="https://agent-with-me-frountend.vercel.app/Signup" class="btn">Log In to Your Account</a>
@@ -102,11 +102,11 @@ const forgetPasswordEmail = `<!DOCTYPE html>
 <body>
   <div class="email-wrapper">
     <h2>Reset Your Password</h2>
-    <p>Hi [User's Name],</p>
+    <p>Hi [UserName],</p>
     <p>We received a request to reset your password. Click the button below to set a new one:</p>
-    <a href="https://jotterapp.com/reset-password?token=123456" class="btn">Reset Password</a>
+    <a href="https://AGENT WITH ME app.com/reset-password?token=123456" class="btn">Reset Password</a>
     <p>If you didn’t request this, you can ignore this email.</p>
-    <div class="footer">&copy; 2025 Jotter. All rights reserved.</div>
+    <div class="footer">&copy; 2025 AGENT WITH ME . All rights reserved.</div>
   </div>
 </body>
 </html>
@@ -118,6 +118,21 @@ const verificationEmail = `<!DOCTYPE html>
   <title>Your Verification Code</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+   .btn {
+      display: inline-block;
+      margin-top: 25px;
+      padding: 14px 32px;
+      background-color: #28a745;
+      color: #fff;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background 0.3s;
+      padding:10px;
+    }
+    .btn:hover {
+      background-color: #218838;
+    }
     body { background: #f4f4f4; font-family: 'Segoe UI', sans-serif; }
     .container { max-width: 600px; background: #fff; margin: auto; padding: 40px; border-radius: 8px; }
     h2 { color: #0a75c2; text-align: center; }
@@ -133,17 +148,19 @@ const verificationEmail = `<!DOCTYPE html>
       margin: 30px 0;
       border-radius: 5px;
     }
+      
     .footer { font-size: 12px; text-align: center; color: #888; margin-top: 30px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Email Verification Code</h2>
-    <p>Hi [User's Name],</p>
-    <p>Use the code below to verify your email address:</p>
-    <div class="code-box">[verificationcode]</div>
+    <p>Hi [userName],</p>
+    <p>Click on the button to Verify your Email </p>
+   <a href = "https://agent-with-me-frountend.vercel.app/verify-email/[verificationcode]" class="btn">
+   Verify your Email </a>[verificationcode]
     <p>This code will expire in 10 minutes.</p>
-    <div class="footer">&copy; 2025 Jotter. All rights reserved.</div>
+    <div class="footer">&copy; 2025 AGENT WITH ME . All rights reserved.</div>
   </div>
 </body>
 </html>
@@ -152,7 +169,7 @@ const welcomeEmail = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Welcome to Jotter!</title>
+  <title>Welcome to AGENT WITH ME !</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { background-color: #f9f9f9; font-family: 'Segoe UI', sans-serif; padding: 0; margin: 0; }
@@ -165,12 +182,12 @@ const welcomeEmail = `<!DOCTYPE html>
 </head>
 <body>
   <div class="email-container">
-    <h1>Welcome to Jotter 🎉</h1>
-    <p>Hi [User's Name],</p>
-    <p>Thank you for signing up for <strong>Jotter</strong>! We’re thrilled to have you on board.</p>
+    <h1>Welcome to AGENT WITH ME  🎉</h1>
+    <p>Hi [UserName],</p>
+    <p>Thank you for signing up for <strong>AGENT WITH ME </strong>! We’re thrilled to have you on board.</p>
     <p>You can now start creating and organizing your notes effortlessly.</p>
-    <p><a href="https://jotterapp.com/dashboard" class="btn">Go to Dashboard</a></p>
-    <div class="footer">&copy; 2025 Jotter. All rights reserved.</div>
+    <p><a href="https://AGENT WITH ME app.com/dashboard" class="btn">Go to Dashboard</a></p>
+    <div class="footer">&copy; 2025 AGENT WITH ME . All rights reserved.</div>
   </div>
 </body>
 </html>
@@ -180,7 +197,7 @@ r`;
 // <html lang="en">
 // <head>
 //   <meta charset="UTF-8">
-//   <title>Notification from Jotter</title>
+//   <title>Notification from AGENT WITH ME </title>
 //   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 //   <style>
 //     body { background: #f0f0f0; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
@@ -192,10 +209,10 @@ r`;
 // </head>
 // <body>
 //   <div class="email-box">
-//     <h2>Hello [User's Name]</h2>
-//     <p>This is a notification from <strong>Jotter</strong>.</p>
+//     <h2>Hello [UserName]</h2>
+//     <p>This is a notification from <strong>AGENT WITH ME </strong>.</p>
 //     <p>[Your custom message goes here.]</p>
-//     <div class="footer">&copy; 2025 Jotter. All rights reserved.</div>
+//     <div class="footer">&copy; 2025 AGENT WITH ME . All rights reserved.</div>
 //   </div>
 // </body>
 // </html>

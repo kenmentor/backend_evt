@@ -5,13 +5,15 @@ const {
   forgetPasswordEmail,
 } = require("./emailTemplate");
 const {} = require("nodemailer");
-function sendVerificationEmail(email, verificationToken) {
+function sendVerificationEmail(email, verificationToken, userName) {
   try {
     const response = client.sendMail({
       from: sender,
       to: email,
       subject: "verify your email address",
-      html: verificationEmail.replace("[verificationcode]", verificationToken),
+      html: verificationEmail
+        .replace("[verificationcode]", verificationToken)
+        .replace("userName", userName),
       category: "Email Verification",
     });
     return response;
@@ -19,7 +21,7 @@ function sendVerificationEmail(email, verificationToken) {
     throw err;
   }
 }
-async function send_welcome_email(email, username) {
+async function send_welcome_email(email, userName) {
   try {
     const response = await client.sendMail({
       from: sender,
@@ -29,7 +31,7 @@ async function send_welcome_email(email, username) {
         company_info_name: "agent-with-me",
         name: username,
       },
-      html: welcomeEmail.replace("[User's Name]", username),
+      html: welcomeEmail.replace("userName", userName),
     });
     console.log("emailsent successfully welcome email", response);
   } catch (error) {
