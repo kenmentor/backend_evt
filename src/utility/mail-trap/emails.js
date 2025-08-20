@@ -13,7 +13,7 @@ function sendVerificationEmail(email, verificationToken, userName) {
       subject: "verify your email address",
       html: verificationEmail
         .replace("[verificationcode]", verificationToken)
-        .replace("userName", userName),
+        .replace("[userName]", userName),
       category: "Email Verification",
     });
     return response;
@@ -31,7 +31,7 @@ async function send_welcome_email(email, userName) {
         company_info_name: "agent-with-me",
         name: username,
       },
-      html: welcomeEmail.replace("userName", userName),
+      html: welcomeEmail.replace("[userName]", userName),
     });
     console.log("emailsent successfully welcome email", response);
   } catch (error) {
@@ -45,7 +45,7 @@ async function sendPasswordResetEmail(email, resetURL) {
       from: sender,
       to: email,
       subject: "Reset your password ",
-      html: forgetPasswordEmail.replace("{resetURL}", resetURL),
+      html: forgetPasswordEmail.replace("[resetURL]", resetURL),
     });
   } catch (error) {
     console.log(error);
