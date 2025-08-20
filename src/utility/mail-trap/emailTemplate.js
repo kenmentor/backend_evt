@@ -37,6 +37,7 @@ const successEmail = `<!DOCTYPE html>
       margin: 10px 0;
     }
     .btn {
+ 
       display: inline-block;
       margin-top: 25px;
       padding: 14px 32px;
@@ -158,7 +159,7 @@ const verificationEmail = `<!DOCTYPE html>
     <p>Hi [userName],</p>
     <p>Click on the button to Verify your Email </p>
    <a href = "https://agent-with-me-frountend.vercel.app/verify-email/[verificationcode]" class="btn">
-   Verify your Email </a>[verificationcode]
+   Verify your Email </a>
     <p>This code will expire in 10 minutes.</p>
     <div class="footer">&copy; 2025 AGENT WITH ME . All rights reserved.</div>
   </div>
