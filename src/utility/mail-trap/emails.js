@@ -29,7 +29,7 @@ async function send_welcome_email(email, userName) {
       template_uuid: "some string from mailtrap",
       template_variables: {
         company_info_name: "agent-with-me",
-        name: username,
+        name: userName,
       },
       html: welcomeEmail.replace("[userName]", userName),
     });
