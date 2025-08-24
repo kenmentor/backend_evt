@@ -22,24 +22,26 @@ const get_house_detail = async (req, res) => {
 };
 
 async function get_house(req, res) {
-  console.log("commmmmmmmmm");
-  const { type, min, max, category, location, limit, bardge, id } = req.query;
-  console.log(req.query);
+  console.log("Incoming query params:", req.query);
+
+  // Destructure based on keyword interface
+  const { type, min, max, searchWord, limit, lga, state, landmark } = req.query;
 
   try {
     const data = await house_service.find_house({
-      type: type,
-      min: parseInt(min),
-      max: parseInt(max),
-      category,
-      location: decodeURIComponent(location),
-      limit: parseInt(limit),
-      bardge: parseInt(bardge),
-      id: id,
+      type,
+      min: min ? parseInt(min) : undefined,
+      max: max ? parseInt(max) : undefined,
+      location: decodeURIComponent(searchWord || ""), // matches frontend
+      limit: limit ? parseInt(limit) : 50,
+      lga,
+      state,
+      landmark,
     });
+
     const responseData = response.goodResponse;
     responseData.data = data;
-    return res.json(responseData).status(200);
+    return res.status(200).json(responseData);
   } catch (error) {
     const responseData = response.badResponse;
     console.error("Error fetching data from DB:", error);

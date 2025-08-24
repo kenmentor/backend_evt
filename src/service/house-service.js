@@ -59,9 +59,12 @@ async function upload_house(files, body, user) {
   const uploadBufferToCloudinary = (fileBuffer, folder = "default") => {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { folder, resource_type: "auto" },
+        {
+          folder,
+          resource_type: "auto",
+          timeout: 600000, // 10 minutes
+        },
         (error, result) => {
-          console.log("this is the error", error);
           if (result) resolve(result);
           else reject(error);
         }
@@ -99,7 +102,7 @@ async function upload_house(files, body, user) {
   // body.host = Object(body.host);
 
   const data = await newcrudRepositoryExtra.create(body);
-  data.save();
+  await data.save();
   return data;
 }
 

@@ -66,9 +66,25 @@ async function sendResetpasswordSuccessEmail(email) {
     throw error;
   }
 }
+
+async function sendRequestEmail(email) {
+  const recipent = [{ email }];
+  try {
+    const response = await client.sendMail({
+      from: sender,
+      to: recipent,
+      subject: "Password Reset succesful ",
+      html: forgetPasswordEmail.replace("{resetURL}", resetURL),
+    });
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
 module.exports = {
   sendVerificationEmail: sendVerificationEmail,
   send_welcome_email: send_welcome_email,
   sendPasswordResetEmail: sendPasswordResetEmail,
   sendResetpasswordSuccessEmail: sendResetpasswordSuccessEmail,
+  sendRequestEmail: sendRequestEmail,
 };
