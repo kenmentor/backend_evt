@@ -20,12 +20,22 @@ const get_house_detail = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch resource" }); // ✅ Send error response
   }
 };
-
 async function get_house(req, res) {
   console.log("Incoming query params:", req.query);
 
-  // Destructure based on keyword interface
-  const { type, min, max, searchWord, limit, lga, state, landmark } = req.query;
+  // Destructure based on keyword interface (include new fields)
+  const {
+    type,
+    min,
+    max,
+    searchWord,
+    limit,
+    lga,
+    state,
+    landmark,
+    amenities, // ✅ new
+    category, // ✅ new
+  } = req.query;
 
   try {
     const data = await house_service.find_house({
@@ -37,6 +47,8 @@ async function get_house(req, res) {
       lga,
       state,
       landmark,
+      amenities: amenities ? amenities.split(",") : undefined, // ✅ handle multiple
+      category, // ✅ optional filter
     });
 
     const responseData = response.goodResponse;
@@ -67,11 +79,11 @@ async function update_house_view(req, res) {
 
 async function upload_house(req, res) {
   try {
-    const { files, body, user } = req;
+    const { files, body } = req;
 
     console.log(body, "fjbbjbjbjjb");
 
-    const data = await house_service.upload_house(files, body, user);
+    const data = await house_service.upload_house(files, body);
 
     res.status(200).json({
       status: true,

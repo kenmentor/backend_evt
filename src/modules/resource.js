@@ -9,46 +9,23 @@ const resourceSchema = new mongoose.Schema(
     },
     title: { type: String, required: true },
     description: { type: String, required: true },
-
-    // Filterable fields
-    state: { type: String, required: true }, // e.g. Rivers
-    lga: { type: String, required: true }, // e.g. Obio-Akpor
-    landmark: { type: String }, // e.g. Hwa
+    state: { type: String, required: true },
     address: { type: String, required: true },
-
-    maxGuests: { type: Number, default: 1 },
+    maxgeust: { type: Number, default: 1 },
     price: { type: Number, required: true },
-
-    amenities: [
-      {
-        type: String,
-        enum: [
-          "Steady Power",
-          "Water Supply",
-          "Parking",
-          "Security",
-          "Furnished",
-          "WiFi",
-          "AC",
-          "Laundry",
-        ],
-      },
-    ],
-
-    type: { type: String, required: true }, // e.g. Self-Contain, Flat, Duplex
-
-    category: { type: String, required: true }, // For broader grouping
-    location: { type: String, required: true }, // Could store coordinates or city
-
-    electricity: { type: Number, required: true }, // 0–24hrs estimate
-    waterSupply: { type: Boolean, required: true },
-
-    views: { type: Number, default: 0 },
-
+    waterSuply: { type: Boolean, required: true },
+    electricity: { type: Number, required: true },
+    location: { type: String, required: true },
+    type: { type: String, required: true },
+    views: {
+      default: 0,
+      type: Number,
+    },
+    category: { type: String, required: true },
     thumbnail: String,
-    gallery: [String],
-
-    available: {
+    // Option 2: store objects
+    gallery: [],
+    avaliable: {
       type: Boolean,
       default: true,
     },
@@ -56,14 +33,6 @@ const resourceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Index for fast search/filtering
-resourceSchema.index({
-  state: 1,
-  lga: 1,
-  landmark: 1,
-  type: 1,
-  price: 1,
-  amenities: 1,
-});
-
+// Add indexes for fast queries
+resourceSchema.index({ location: "text", type: "text", category: "text" }); // Full-text search
 module.exports = mongoose.model("Resource", resourceSchema);

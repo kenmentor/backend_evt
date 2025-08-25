@@ -51,7 +51,7 @@ console.log(
     api_secret: process.env.CLOUDINARY_API_SECRET ? "***" : null,
   } // Hide secret in log
 );
-async function upload_house(files, body, user) {
+async function upload_house(files, body) {
   await connectDB();
   console.log("UPLOAD SERVICE ");
   console.log(files);
