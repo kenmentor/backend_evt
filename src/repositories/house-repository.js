@@ -30,7 +30,7 @@ class house_repo extends crudRepositoryExtra {
     try {
       let query = {};
 
-      // 🔎 Location & Keyword filters (fuzzy match)
+      // 🔎 Location & Keyword filters (TEXT SEARCH instead of regex)
       const textFilters = [
         "location",
         "type",
@@ -39,11 +39,17 @@ class house_repo extends crudRepositoryExtra {
         "lga",
         "landmark",
       ];
+
+      let textSearch = [];
       textFilters.forEach((field) => {
         if (filter[field] && filter[field] !== "undefined") {
-          query[field] = { $regex: new RegExp(filter[field], "i") }; // fuzzy, case-insensitive
+          textSearch.push(filter[field]);
         }
       });
+
+      if (textSearch.length > 0) {
+        query.$text = { $search: textSearch.join(" ") };
+      }
 
       // 🆔 Exclude a specific house by ID (if provided)
       if (filter.id && filter.id !== "undefined") {
@@ -80,27 +86,54 @@ class house_repo extends crudRepositoryExtra {
       const page = Number(filter.bardge) || 1;
       const skip = (page - 1) * limit;
 
-      // 📊 Weighted sorting: prioritize type/location matches, then newest
-      const sort = { score: { $meta: "textScore" }, createdAt: -1 };
+      // 📊 Weighted sorting: prioritize text score (if available), then newest
+      const sort = query.$text
+        ? { score: { $meta: "textScore" }, createdAt: -1 }
+        : { createdAt: -1 };
 
       // 🐛 Debugging
       console.log("✅ Advanced Final Query:", query);
       console.log("📌 Pagination:", { limit, page, skip });
 
       // 🚀 Execute query
+      const projection = query.$text ? { score: { $meta: "textScore" } } : {};
+
       const results = await this.module
-        .find(query, { score: { $meta: "textScore" } }) // include text relevance
+        .find(query, projection)
         .limit(limit)
         .skip(skip)
         .sort(sort);
 
       // 📉 Fallback: if no results, return recent listings
       if (results.length === 0) {
-        return await this.module
-          .find()
-          .limit(limit)
-          .skip(skip)
-          .sort({ createdAt: -1 });
+        // Try a looser match first (any field that contains search terms)
+        const looseQuery = {
+          $or: textFilters
+            .filter((field) => filter[field] && filter[field] !== "undefined")
+            .map((field) => ({
+              [field]: { $regex: new RegExp(filter[field], "i") },
+            })),
+        };
+
+        let looseResults = [];
+        if (looseQuery.$or.length > 0) {
+          looseResults = await this.module
+            .find(looseQuery)
+            .limit(limit)
+            .skip(skip)
+            .sort({ createdAt: -1 });
+        }
+
+        // If still nothing, just return recent entries
+        if (looseResults.length === 0) {
+          return await this.module
+            .find()
+            .limit(limit)
+            .skip(skip)
+            .sort({ createdAt: -1 });
+        }
+
+        return looseResults;
       }
 
       return results;
@@ -109,6 +142,7 @@ class house_repo extends crudRepositoryExtra {
       throw error;
     }
   }
+
   async losefilter(filter) {
     function queryBuilder(filter) {
       let query = {
