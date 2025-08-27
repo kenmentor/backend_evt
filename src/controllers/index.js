@@ -1,4 +1,4 @@
-module.exports = {
+const demand = (module.exports = {
   house_controller: require("./house-controller"),
   user_controller: require("./user-controller"),
   feedback_controller: require("./feedback-controller"),
@@ -7,4 +7,5 @@ module.exports = {
   request_controller: require("./request-controller"),
   auth_controller: require("./auth-controller"),
   payment_control: require("./payment-controller"),
-};
+  demand_controller: require("./demand-controller"),
+});

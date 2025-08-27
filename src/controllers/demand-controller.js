@@ -1,7 +1,7 @@
-const { house_service } = require("../service");
+const { demand_service } = require("../service/");
 const { response } = require("../utility");
 
-const get_house_detail = async (req, res) => {
+const get_demand_detail = async (req, res) => {
   console.log("commmmmmmmmm");
   try {
     const { id } = req.params;
@@ -11,7 +11,7 @@ const get_house_detail = async (req, res) => {
       return res.json(responseData).status(200);
     }
     console.log(id, "this id jbfyfyuf by");
-    const data = await house_service.get_details(id); // ✅ Pass correct ID
+    const data = await demand_service.get_details(id); // ✅ Pass correct ID
     const responseData = response.goodResponse;
     responseData.data = data;
     res.json(responseData).status(200);
@@ -20,35 +20,32 @@ const get_house_detail = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch resource" }); // ✅ Send error response
   }
 };
-async function get_house(req, res) {
+async function get_demand(req, res) {
   console.log("Incoming query params:", req.query);
 
   // Destructure based on keyword interface (include new fields)
   const {
-    type,
     min,
     max,
     searchWord,
-    limit,
+
     lga,
     state,
-    landmark,
+
     amenities, // ✅ new
     category, // ✅ new
   } = req.query;
 
   try {
-    const data = await house_service.find_house({
-      type,
+    const data = await demand_service.find_demand({
       min: min ? parseInt(min) : undefined,
       max: max ? parseInt(max) : undefined,
       location: decodeURIComponent(searchWord || ""), // matches frontend
-      limit: limit ? parseInt(limit) : 50,
+
       lga,
       state,
-      landmark,
       amenities: amenities ? amenities.split(",") : undefined, // ✅ handle multiple
-      category, // ✅ optional filter
+      category,
     });
 
     const responseData = response.goodResponse;
@@ -61,11 +58,10 @@ async function get_house(req, res) {
   }
 }
 
-async function update_house_view(req, res) {
-  console.log("commmmmmmmmm");
-  const id = await req.params.id;
+async function update_demand_view(req, res) {
+  const id = await req.body.id;
   try {
-    const data = await house_service.update_house_view(id);
+    const data = await demand_service.update_demand_view(id);
     const responseData = response.goodResponse;
     responseData.data = data;
     res.json(responseData);
@@ -77,13 +73,13 @@ async function update_house_view(req, res) {
   }
 }
 
-async function upload_house(req, res) {
+async function upload_demand(req, res) {
   try {
     const { files, body } = req;
 
     console.log(body, "fjbbjbjbjjb");
 
-    const data = await house_service.upload_house(files, body);
+    const data = await demand_service.upload_demand(files, body);
 
     res.status(200).json({
       status: true,
@@ -99,21 +95,19 @@ async function upload_house(req, res) {
   }
 }
 
-async function update_house(req, res) {
+async function update_demand(req, res) {
   try {
-    const { body } = req;
-
-    if (body.price) {
-      body.price = Number(body.price);
-    }
-    const data = house_service.update_house({ body });
+    const { files, body } = req;
+    console.log("files", files);
+    console.log("body", body);
+    const data = demand_service.update_demand({ files, body });
     const responseData = response.goodResponse;
     res.json(responseData);
   } catch (err) {
     throw err;
   }
 }
-async function delete_house(req, res) {
+async function delete_demand(req, res) {
   console.log("commmmmmmmmm");
   const id = await req.body.id;
   const data = await user_service.delete();
@@ -123,10 +117,10 @@ async function delete_house(req, res) {
 }
 
 module.exports = {
-  upload_house,
-  update_house_view,
-  get_house,
-  get_house_detail,
-  update_house,
-  delete_house,
+  upload_demand,
+  update_demand_view,
+  get_demand,
+  get_demand_detail,
+  update_demand,
+  delete_demand,
 };

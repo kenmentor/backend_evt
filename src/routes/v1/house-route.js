@@ -14,7 +14,7 @@ router.get("/", house_controller.get_house);
 
 // (update view per click )
 router.put("/", house_controller.update_house_view);
-
+router.put("/:id", house_controller.update_house);
 //v1/upload  (upload files and it details)
 router.post("/", upload_molter, house_controller.upload_house);
 

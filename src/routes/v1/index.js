@@ -9,8 +9,8 @@ const payment_route = require("./payment-route");
 const auth_route = require("./authentication-route");
 const feedback_route = require("./feedback-route");
 const booking_route = require("./booking-route");
-const request_route = require("./request-route")
-
+const request_route = require("./request-route");
+const demand_route = require("./demand-route");
 router.use("/house", house_route);
 console.log("done 1");
 router.use("/auth", auth_route);
@@ -25,8 +25,8 @@ console.log("done 5");
 // route.use("/payment", payment_route);
 router.use("/booking", booking_route);
 console.log("done 6");
-router.use("/request", request_route)
-router.use("/user", user_route)
-router.use("/payment",payment_route)
-
+router.use("/request", request_route);
+router.use("/user", user_route);
+router.use("/payment", payment_route);
+router.use("/demand", demand_route);
 module.exports = router;
