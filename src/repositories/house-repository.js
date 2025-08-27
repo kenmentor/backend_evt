@@ -124,15 +124,6 @@ class house_repo extends crudRepositoryExtra {
             .sort({ createdAt: -1 });
         }
 
-        // If still nothing, just return recent entries
-        if (looseResults.length === 0) {
-          return await this.module
-            .find()
-            .limit(limit)
-            .skip(skip)
-            .sort({ createdAt: -1 });
-        }
-
         return looseResults;
       }
 
