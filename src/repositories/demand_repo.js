@@ -1,6 +1,6 @@
 const crudRepositoryExtra = require("./CRUD");
 const mongoose = require("mongoose");
-class house_repo extends crudRepositoryExtra {
+class demand_repo extends crudRepositoryExtra {
   constructor(module) {
     super(module);
   }
@@ -30,15 +30,7 @@ class house_repo extends crudRepositoryExtra {
     try {
       let query = {};
 
-      // 🔎 Location & Keyword filters (TEXT SEARCH instead of regex)
-      const textFilters = [
-        "location",
-        "type",
-        "category",
-        "state",
-        "lga",
-        "landmark",
-      ];
+      const textFilters = ["location", "type", "state", "lga"];
 
       let textSearch = [];
       textFilters.forEach((field) => {
@@ -51,13 +43,12 @@ class house_repo extends crudRepositoryExtra {
         query.$text = { $search: textSearch.join(" ") };
       }
 
-      //  Exclude a specific house by ID (if provided)
+      // 🆔 Exclude a specific demand by ID (if provided)
       if (filter.id && filter.id !== "undefined") {
         query._id = { $ne: mongoose.Types.ObjectId(filter.id) };
-        query.avaliable = { $ne: true };
       }
 
-      //  Price filter with tolerance
+      // 💰 Price filter with tolerance
       let min = Number(filter.min);
       let max = Number(filter.max);
 
@@ -145,9 +136,9 @@ class house_repo extends crudRepositoryExtra {
       .find(queryBuilder(filter))
       .limit(filter.limit)
       .skip(filter.limit * filter.bardge - 1)
-      .exec((err, house) => {
-        return house;
+      .exec((err, demand) => {
+        return demand;
       });
   }
 }
-module.exports = house_repo;
+module.exports = demand_repo;

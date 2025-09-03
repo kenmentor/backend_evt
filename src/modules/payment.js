@@ -20,24 +20,21 @@ const paymentSchema = new mongoose.Schema(
     amount: {
       type: Number,
       require: true,
-      default: 0.000
+      default: 0.0,
+    },
+    refund: {
+      type: Number,
+      default: 0.0,
     },
     status: {
       type: String,
       required: true,
       defualt: "pending",
     },
-    amount: {
-      type: Number,
-      required: true,
-    },
+
     paymentStatus: {
       type: String,
       default: "pending",
-      required: true,
-    },
-    platformFee: {
-      type: Number,
       required: true,
     },
   },

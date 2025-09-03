@@ -27,41 +27,21 @@ async function Payment_webhook(req, res) {
     event.event === "charge.success" &&
     event.data.channel === "bank_transfer"
   ) {
-    const { email, guest, host, house, amount } = event.data.metadata;
+    const { email, guest, host, house, price, checkIn, checkOut } =
+      event.data.metadata;
     const PaymentRef = event.data.reference;
-    const status = "success";
-
+    const amount = event.data.amount;
     try {
-      await db.$transaction(async (tx) => {
-        // Save payment
-        await tx.payment.payment.create({
-          host,
-          guest,
-          house,
-          amount: amount / 100, // convert to actual currency
-          status: "success",
-          paymentStatus: "paid",
-          platformFee: (amount / 100) * 0.05, // 5% fee
-          paymentRef: PaymentRef,
-        });
-
-        // Create booking
-        await tx.booking.create({
-          host,
-          guest,
-          amount: amount / 100,
-          house,
-          status,
-          paymentId: PaymentRef,
-          checkIn: null, // Add actual data if available
-          checkOut: null, // Add actual data if available
-        });
-
-        // Update resource availability
-        await tx.resource.update({
-          where: { id: house }, // assuming house id here
-          data: { available: false },
-        });
+      await paymentService.Payment_webhook({
+        email,
+        guest,
+        host,
+        house,
+        price,
+        amount,
+        checkIn,
+        checkOut,
+        PaymentRef,
       });
 
       const { goodResponse } = resTemplate;
@@ -70,7 +50,7 @@ async function Payment_webhook(req, res) {
     } catch (error) {
       console.error("Transaction failed:", error);
       const { badResponse } = resTemplate;
-      badResponse.message = "Transaction failed";
+      badResponse.message = error.message || "Transaction failed";
       return res.status(500).json(badResponse);
     }
   } else {
@@ -81,7 +61,7 @@ async function Payment_webhook(req, res) {
   }
 }
 
-// Initialize bank transfer
+// Initialize bank transfer 
 async function initilializeBank(req, res) {
   const { email, amount, guestId, hostId, houseId } = req.body;
   const resTemplate = response;
@@ -89,7 +69,7 @@ async function initilializeBank(req, res) {
   try {
     const data = await paymentService.initializeBank({
       email,
-      amount,
+      price: amount,
       guest: guestId,
       host: hostId,
       house: houseId,
@@ -102,13 +82,14 @@ async function initilializeBank(req, res) {
     } else {
       const { badResponse } = resTemplate;
       badResponse.message = data.message;
-      return res.status(400).json(badResponse);
+      badResponse.status = 400;
+      return res.status(badResponse.status).json(badResponse);
     }
   } catch (error) {
     console.error("Error initializing bank transfer:", error);
     const { badResponse } = resTemplate;
     badResponse.message = "Error occurred while initializing transaction";
-    return res.status(500).json(badResponse);
+    return res.status().json(badResponse);
   }
 }
 
@@ -123,35 +104,17 @@ async function checkPayment(req, res) {
   }
 
   try {
-    const paystackRes = await axios.get(
-      `https://api.paystack.co/transaction/verify/${reference}`,
-      {
-        headers: {
-          Authorization: `Bearer ${PAYSTACK_SECRET}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    const { data } = paystackRes.data;
+    const data = await paymentService.check_payment(reference);
 
     if (data.status === "success") {
       const { goodResponse } = resTemplate;
       goodResponse.message = "Payment successful";
-      goodResponse.data = {
-        amount: data.amount / 100,
-        email: data.customer.email,
-        status: data.status,
-        reference: data.reference,
-      };
+      goodResponse.data = data;
       return res.json(goodResponse);
     } else {
       const { goodResponse } = resTemplate;
       goodResponse.message = "Payment not completed";
-      goodResponse.data = {
-        status: data.status,
-        reference: data.reference,
-      };
+      goodResponse.data = data;
       return res.json(goodResponse);
     }
   } catch (error) {

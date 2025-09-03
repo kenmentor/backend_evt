@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const demandSchema = new mongoose.Schema(
   {
-    user: {
+    guest: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,

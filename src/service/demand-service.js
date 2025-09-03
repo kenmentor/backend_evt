@@ -1,12 +1,11 @@
-const { resourceDB } = require("../modules");
-const { crudRepository } = require("../repositories");
+const { demandDB } = require("../modules");
+const { demand_repo } = require("../repositories");
 
 require("dotenv").config();
 
-const newcrudRepositoryExtra = new crudRepository(resourceDB);
+const newcrudRepositoryExtra = new demand_repo(demandDB);
 
 async function find_demand(object) {
-  await connectDB();
   return newcrudRepositoryExtra.filter(object);
 }
 

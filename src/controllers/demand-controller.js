@@ -24,17 +24,7 @@ async function get_demand(req, res) {
   console.log("Incoming query params:", req.query);
 
   // Destructure based on keyword interface (include new fields)
-  const {
-    min,
-    max,
-    searchWord,
-
-    lga,
-    state,
-
-    amenities, // ✅ new
-    category, // ✅ new
-  } = req.query;
+  const { min, max, searchWord, lga, state, amenities, category } = req.query;
 
   try {
     const data = await demand_service.find_demand({
@@ -75,11 +65,9 @@ async function update_demand_view(req, res) {
 
 async function upload_demand(req, res) {
   try {
-    const { files, body } = req;
+    const { body } = req;
 
-    console.log(body, "fjbbjbjbjjb");
-
-    const data = await demand_service.upload_demand(files, body);
+    const data = await demand_service.upload_demand(body);
 
     res.status(200).json({
       status: true,
