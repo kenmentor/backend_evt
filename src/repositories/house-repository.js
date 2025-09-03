@@ -5,22 +5,14 @@ class house_repo extends crudRepositoryExtra {
     super(module);
   }
   async getDetail(id) {
-    console.log("get-details-crud ");
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error("id is not valid");
+      throw new Error("Invalid resource ID format");
     }
 
     try {
-      console.log(id);
-
-      // Populate the user reference and select only phoneNumber
       const data = await this.module
         .findById(id)
-        .populate("host", "phoneNumber");
-      // assumes in house schema you did { type: mongoose.Schema.Types.ObjectId, ref: "User" }
-
-      console.log(data);
+        .populate("host", "phoneNumber -_id"); // populate only phoneNumber, exclude _id
 
       if (!data) {
         throw new Error("Resource not found");
@@ -28,8 +20,8 @@ class house_repo extends crudRepositoryExtra {
 
       return data;
     } catch (error) {
-      console.error("Error fetching resource:", error);
-      throw new Error("Failed to fetch resource");
+      console.error("Error fetching resource:", error.message);
+      throw new Error(error.message || "Failed to fetch resource");
     }
   }
 
