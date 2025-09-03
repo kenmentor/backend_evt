@@ -10,7 +10,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const {
   sendVerificationEmail,
-  send_welcome_email,
+  sendWelcomeEmail,
 } = require("../utility/mail-trap/emails");
 const saltround = 10;
 const jwt_api_key = process.env.JWT_API_KEY;
@@ -53,7 +53,7 @@ async function verify_email(code) {
       user.verifyToken = undefined;
       user.verificationTokenExpireAt = undefined;
       await user.save();
-      await send_welcome_email(user.email, user.userName);
+      await sendWelcomeEmail(user.email, user.userName);
     }
     console.log(user);
     return user;
@@ -106,11 +106,6 @@ async function signup_user(dataObject, res) {
   try {
     const hashedPassword = await bcrypt.hash(dataObject.password, saltround);
     const verifyToken = await generateVerificationCode();
-    const resp = await sendVerificationEmail(
-      dataObject.email,
-      dataObject.verifyToken,
-      dataObject.userName
-    );
     const data = await verificationRepo.create({
       ...dataObject,
       password: hashedPassword,
@@ -118,8 +113,6 @@ async function signup_user(dataObject, res) {
       verificationTokenExpireAt: Date.now() + 24 * 60 * 60 * 1000, //24hr
     });
     console.log(data.email);
-
-    console.log(resp, "emaoling  ooooooo");
 
     return data;
   } catch (err) {

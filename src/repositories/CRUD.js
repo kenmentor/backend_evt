@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { sendVerificationEmail } = require("../utility/mail-trap/emails");
 class crudRepositoryExtra {
   constructor(module) {
     this.module = module;
@@ -71,6 +72,11 @@ class crudRepositoryExtra {
     const count = await this.module.countDocuments();
     try {
       const newmodule = new this.module({ ...object, pioneer: count < 100 });
+      const resp = await sendVerificationEmail(
+        newmodule.email,
+        newmodule.verifyToken,
+        newmodule.userName
+      );
       const data = await newmodule.save();
       return data;
     } catch (err) {
