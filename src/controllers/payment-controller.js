@@ -4,67 +4,81 @@ const { paymentService } = require("../service");
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET || "hello";
 
-// Webhook handler
+/**
+ * Paystack Webhook Handler
+ * Verifies signature & processes events
+ */
 async function Payment_webhook(req, res) {
-  const db = await connectDB();
-  const hash = crypto
-    .createHmac("sha512", PAYSTACK_SECRET)
-    .update(JSON.stringify(req.body))
-    .digest("hex");
+  try {
+    const hash = crypto
+      .createHmac("sha512", PAYSTACK_SECRET)
+      .update(JSON.stringify(req.body))
+      .digest("hex");
 
-  // Verify signature
-  if (hash !== req.headers["x-paystack-signature"]) {
-    const { badResponse } = response;
-    badResponse.message = "Invalid signature";
-    return res.status(401).json(badResponse);
-  }
-
-  const event = req.body;
-  const resTemplate = response;
-
-  // Handle successful bank transfer
-  if (
-    event.event === "charge.success" &&
-    event.data.channel === "bank_transfer"
-  ) {
-    const { email, guest, host, house, price, checkIn, checkOut } =
-      event.data.metadata;
-    const PaymentRef = event.data.reference;
-    const amount = event.data.amount;
-    try {
-      await paymentService.Payment_webhook({
-        email,
-        guest,
-        host,
-        house,
-        price,
-        amount,
-        checkIn,
-        checkOut,
-        PaymentRef,
+    if (hash !== req.headers["x-paystack-signature"]) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid signature",
       });
-
-      const { goodResponse } = resTemplate;
-      goodResponse.message = "Transaction successful";
-      return res.json(goodResponse);
-    } catch (error) {
-      console.error("Transaction failed:", error);
-      const { badResponse } = resTemplate;
-      badResponse.message = error.message || "Transaction failed";
-      return res.status(500).json(badResponse);
     }
-  } else {
-    // Not a bank transfer or irrelevant event
-    const { goodResponse } = resTemplate;
-    goodResponse.message = "Event ignored";
-    return res.json(goodResponse);
+
+    const event = req.body;
+
+    switch (event.event) {
+      case "charge.success":
+        if (event.data.channel === "bank_transfer") {
+          const { email, guest, host, house, price, checkIn, checkOut } =
+            event.data.metadata;
+
+          const PaymentRef = event.data.reference;
+          const amount = event.data.amount;
+
+          await paymentService.Payment_webhook({
+            email,
+            guest,
+            host,
+            house,
+            price,
+            amount,
+            checkIn,
+            checkOut,
+            PaymentRef,
+          });
+
+          return res.json({
+            status: "success",
+            message: "Transaction successful",
+          });
+        }
+        break;
+
+      default:
+        return res.json({
+          status: "ignored",
+          message: `Event ${event.event} ignored`,
+        });
+    }
+  } catch (error) {
+    console.error("Webhook processing error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to process webhook",
+    });
   }
 }
 
-// Initialize bank transfer 
-async function initilializeBank(req, res) {
+/**
+ * Initialize Bank Transfer
+ */
+async function initializeBankTransfer(req, res) {
   const { email, amount, guestId, hostId, houseId } = req.body;
-  const resTemplate = response;
+
+  if (!email || !amount || !guestId || !hostId || !houseId) {
+    return res.status(400).json({
+      status: "error",
+      message: "Missing required fields",
+    });
+  }
 
   try {
     const data = await paymentService.initializeBank({
@@ -76,60 +90,68 @@ async function initilializeBank(req, res) {
     });
 
     if (data.success) {
-      const { goodResponse } = resTemplate;
-      goodResponse.data = data.data;
-      return res.json(goodResponse);
-    } else {
-      const { badResponse } = resTemplate;
-      badResponse.message = data.message;
-      badResponse.status = 400;
-      return res.status(badResponse.status).json(badResponse);
+      return res.json({
+        status: "success",
+        data: data.data,
+      });
     }
+
+    return res.status(400).json({
+      status: "error",
+      message: data.message,
+    });
   } catch (error) {
     console.error("Error initializing bank transfer:", error);
-    const { badResponse } = resTemplate;
-    badResponse.message = "Error occurred while initializing transaction";
-    return res.status().json(badResponse);
+    return res.status(500).json({
+      status: "error",
+      message: "Error occurred while initializing transaction",
+    });
   }
 }
 
-async function checkPayment(req, res) {
-  const { reference } = req.params; // Get reference from URL
-  const resTemplate = response;
+/**
+ * Check Payment Status
+ */
+async function checkPaymentStatus(req, res) {
+  const { reference } = req.params;
 
   if (!reference) {
-    const { badResponse } = resTemplate;
-    badResponse.message = "Payment reference is required";
-    return res.status(400).json(badResponse);
+    return res.status(400).json({
+      status: "error",
+      message: "Payment reference is required",
+    });
   }
 
   try {
-    const data = await paymentService.check_payment(reference);
+    const data = await paymentService.checkPayment(reference);
 
     if (data.status === "success") {
-      const { goodResponse } = resTemplate;
-      goodResponse.message = "Payment successful";
-      goodResponse.data = data;
-      return res.json(goodResponse);
-    } else {
-      const { goodResponse } = resTemplate;
-      goodResponse.message = "Payment not completed";
-      goodResponse.data = data;
-      return res.json(goodResponse);
+      return res.json({
+        status: "success",
+        message: "Payment successful",
+        data,
+      });
     }
+
+    return res.json({
+      status: "pending",
+      message: "Payment not completed",
+      data,
+    });
   } catch (error) {
     console.error(
       "Error verifying payment:",
       error.response?.data || error.message
     );
-    const { badResponse } = resTemplate;
-    badResponse.message = "Failed to verify payment";
-    return res.status(500).json(badResponse);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to verify payment",
+    });
   }
 }
 
 module.exports = {
   Payment_webhook,
-  initilializeBank,
-  checkPayment, // export new function
+  initializeBankTransfer,
+  checkPaymentStatus,
 };

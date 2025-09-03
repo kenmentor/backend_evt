@@ -8,13 +8,20 @@ class house_repo extends crudRepositoryExtra {
     console.log("get-details-crud ");
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      throw new Error("id is not valid ");
+      throw new Error("id is not valid");
     }
 
     try {
       console.log(id);
-      const data = await this.module.findById(Object(id));
+
+      // Populate the user reference and select only phoneNumber
+      const data = await this.module
+        .findById(id)
+        .populate("user", "phoneNumber");
+      // assumes in house schema you did { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+
       console.log(data);
+
       if (!data) {
         throw new Error("Resource not found");
       }
@@ -30,7 +37,7 @@ class house_repo extends crudRepositoryExtra {
     try {
       let query = {};
 
-      // 🔎 Location & Keyword filters (TEXT SEARCH instead of regex)
+      // 🔎 Step 1: Text-based filters
       const textFilters = [
         "location",
         "type",
@@ -39,25 +46,25 @@ class house_repo extends crudRepositoryExtra {
         "lga",
         "landmark",
       ];
+      let searchTerms = [];
 
-      let textSearch = [];
       textFilters.forEach((field) => {
         if (filter[field] && filter[field] !== "undefined") {
-          textSearch.push(filter[field]);
+          searchTerms.push(filter[field]);
         }
       });
 
-      if (textSearch.length > 0) {
-        query.$text = { $search: textSearch.join(" ") };
+      if (searchTerms.length > 0) {
+        // Try text index first
+        query.$text = { $search: searchTerms.join(" ") };
       }
 
-      //  Exclude a specific house by ID (if provided)
+      // ❌ Exclude house ID if provided
       if (filter.id && filter.id !== "undefined") {
         query._id = { $ne: mongoose.Types.ObjectId(filter.id) };
-        query.avaliable = { $ne: true };
       }
 
-      //  Price filter with tolerance
+      // 💰 Price filter with adaptive tolerance
       let min = Number(filter.min);
       let max = Number(filter.max);
 
@@ -65,21 +72,12 @@ class house_repo extends crudRepositoryExtra {
         query.price = {};
         if (!isNaN(min)) query.price.$gte = min;
         if (!isNaN(max)) query.price.$lte = max;
-
-        // 🔥 Smart tolerance: expand price range if no results
-        if (
-          Object.keys(query.price).length &&
-          !(await this.module.exists(query))
-        ) {
-          query.price.$gte = isNaN(min) ? 0 : Math.max(0, min - 50000); // -₦50k tolerance
-          query.price.$lte = isNaN(max) ? Number.MAX_SAFE_INTEGER : max + 50000; // +₦50k tolerance
-        }
       }
 
-      // 🛠 Amenities filter (AND logic)
+      // 🛠 Amenities (use partial match instead of strict $all)
       if (filter.amenities && filter.amenities !== "undefined") {
         const amenitiesArray = filter.amenities.split(",").map((a) => a.trim());
-        query.amenities = { $all: amenitiesArray };
+        query.amenities = { $in: amenitiesArray }; // ✅ looser than $all
       }
 
       // 📄 Pagination
@@ -87,47 +85,58 @@ class house_repo extends crudRepositoryExtra {
       const page = Number(filter.bardge) || 1;
       const skip = (page - 1) * limit;
 
-      // 📊 Weighted sorting: prioritize text score (if available), then newest
+      // ⚖️ Sorting
       const sort = query.$text
         ? { score: { $meta: "textScore" }, createdAt: -1 }
         : { createdAt: -1 };
 
-      // 🐛 Debugging
-      console.log("✅ Advanced Final Query:", query);
-      console.log("📌 Pagination:", { limit, page, skip });
-
-      // 🚀 Execute query
       const projection = query.$text ? { score: { $meta: "textScore" } } : {};
 
-      const results = await this.module
+      // 🚀 Primary Query
+      let results = await this.module
         .find(query, projection)
         .limit(limit)
         .skip(skip)
         .sort(sort);
 
-      // 📉 Fallback: if no results, return recent listings
-      if (results.length === 0) {
-        // Try a looser match first (any field that contains search terms)
-        const looseQuery = {
-          $or: textFilters
-            .filter((field) => filter[field] && filter[field] !== "undefined")
-            .map((field) => ({
-              [field]: { $regex: new RegExp(filter[field], "i") },
-            })),
-        };
+      // 🟡 Step 2: Expand price tolerance if no results
+      if (results.length === 0 && (!isNaN(min) || !isNaN(max))) {
+        query.price = {};
+        if (!isNaN(min)) query.price.$gte = Math.max(0, min - 100000); // widen tolerance
+        if (!isNaN(max)) query.price.$lte = max + 100000;
 
-        let looseResults = [];
-        if (looseQuery.$or.length > 0) {
-          looseResults = await this.module
-            .find(looseQuery)
-            .limit(limit)
-            .skip(skip)
-            .sort({ createdAt: -1 });
-        }
-
-        return looseResults;
+        results = await this.module
+          .find(query)
+          .limit(limit)
+          .skip(skip)
+          .sort(sort);
       }
 
+      // 🔵 Step 3: Loose regex fallback if still nothing
+      if (results.length === 0 && searchTerms.length > 0) {
+        const looseQuery = {
+          $or: textFilters.map((field) => ({
+            [field]: { $regex: new RegExp(searchTerms.join("|"), "i") },
+          })),
+        };
+
+        results = await this.module
+          .find(looseQuery)
+          .limit(limit)
+          .skip(skip)
+          .sort({ createdAt: -1 });
+      }
+
+      // 🔴 Step 4: Absolute fallback → return latest houses
+      if (results.length === 0) {
+        results = await this.module
+          .find({})
+          .limit(limit)
+          .skip(skip)
+          .sort({ createdAt: -1 });
+      }
+
+      console.log("✅ Final Results:", results.length);
       return results;
     } catch (error) {
       console.error("❌ Error filtering data:", error);
