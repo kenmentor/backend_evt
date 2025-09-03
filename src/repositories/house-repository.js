@@ -17,7 +17,7 @@ class house_repo extends crudRepositoryExtra {
       // Populate the user reference and select only phoneNumber
       const data = await this.module
         .findById(id)
-        .populate("user", "phoneNumber");
+        .populate("host", "phoneNumber");
       // assumes in house schema you did { type: mongoose.Schema.Types.ObjectId, ref: "User" }
 
       console.log(data);
