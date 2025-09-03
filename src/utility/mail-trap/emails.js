@@ -4,87 +4,70 @@ const {
   welcomeEmail,
   forgetPasswordEmail,
 } = require("./emailTemplate");
-const {} = require("nodemailer");
-function sendVerificationEmail(email, verificationToken, userName) {
-  try {
-    const response = client.sendMail({
-      from: sender,
-      to: email,
-      subject: "verify your email address",
-      html: verificationEmail
-        .replace("[verificationcode]", verificationToken)
-        .replace("[userName]", userName),
-      category: "Email Verification",
-    });
-    return response;
-  } catch (err) {
-    throw err;
-  }
-}
-async function send_welcome_email(email, userName) {
+
+// 🟢 Generalized send function
+async function sendEmail(options) {
   try {
     const response = await client.sendMail({
       from: sender,
-      to: email,
-      template_uuid: "some string from mailtrap",
-      template_variables: {
-        company_info_name: "agent-with-me",
-        name: userName,
-      },
-      html: welcomeEmail.replace("[userName]", userName),
+      ...options,
     });
-    console.log("emailsent successfully welcome email", response);
+    console.log("✅ Email sent:", response);
+    return response;
   } catch (error) {
+    console.error("❌ Email sending failed:", error);
     throw error;
   }
+}
+
+// 🟡 Specific email helpers
+async function sendVerificationEmail(email, verificationToken, userName) {
+  return sendEmail({
+    to: email,
+    subject: "Verify your email address",
+    html: verificationEmail
+      .replace("[verificationcode]", verificationToken)
+      .replace("[userName]", userName),
+    category: "Email Verification",
+  });
+}
+
+async function sendWelcomeEmail(email, userName) {
+  return sendEmail({
+    to: email,
+    subject: "Welcome to Agent-With-Me 🎉",
+    html: welcomeEmail.replace("[userName]", userName),
+  });
 }
 
 async function sendPasswordResetEmail(email, resetURL) {
-  try {
-    const response = await client.sendMail({
-      from: sender,
-      to: email,
-      subject: "Reset your password ",
-      html: forgetPasswordEmail.replace("[resetURL]", resetURL),
-    });
-  } catch (error) {
-    console.log(error);
-    throw error;
-  }
-}
-async function sendResetpasswordSuccessEmail(email) {
-  const recipent = [{ email }];
-  try {
-    const response = await client.sendMail({
-      from: sender,
-      to: recipent,
-      subject: "Password Reset succesful ",
-      html: forgetPasswordEmail.replace("{resetURL}", resetURL),
-    });
-  } catch (error) {
-    console.log(error);
-    throw error;
-  }
+  return sendEmail({
+    to: email,
+    subject: "Reset your password",
+    html: forgetPasswordEmail.replace("[resetURL]", resetURL),
+  });
 }
 
-async function sendRequestEmail(email) {
-  const recipent = [{ email }];
-  try {
-    const response = await client.sendMail({
-      from: sender,
-      to: recipent,
-      subject: "Password Reset succesful ",
-      html: forgetPasswordEmail.replace("{resetURL}", resetURL),
-    });
-  } catch (error) {
-    console.log(error);
-    throw error;
-  }
+async function sendResetPasswordSuccessEmail(email) {
+  return sendEmail({
+    to: email,
+    subject: "Password Reset Successful",
+    html: `<p>Hello,</p><p>Your password has been reset successfully. If this wasn't you, please contact support immediately.</p>`,
+  });
 }
+
+async function sendRequestEmail(email, requestMessage) {
+  return sendEmail({
+    to: email,
+    subject: "New Request Notification",
+    html: `<p>Hello,</p><p>${requestMessage}</p>`,
+  });
+}
+
 module.exports = {
-  sendVerificationEmail: sendVerificationEmail,
-  send_welcome_email: send_welcome_email,
-  sendPasswordResetEmail: sendPasswordResetEmail,
-  sendResetpasswordSuccessEmail: sendResetpasswordSuccessEmail,
-  sendRequestEmail: sendRequestEmail,
+  sendVerificationEmail,
+  sendWelcomeEmail,
+  sendPasswordResetEmail,
+  sendResetPasswordSuccessEmail,
+  sendRequestEmail,
 };

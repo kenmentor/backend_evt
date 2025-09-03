@@ -106,18 +106,19 @@ async function signup_user(dataObject, res) {
   try {
     const hashedPassword = await bcrypt.hash(dataObject.password, saltround);
     const verifyToken = await generateVerificationCode();
+    const resp = await sendVerificationEmail(
+      dataObject.email,
+      dataObject.verifyToken,
+      dataObject.userName
+    );
     const data = await verificationRepo.create({
       ...dataObject,
       password: hashedPassword,
       verifyToken: verifyToken,
       verificationTokenExpireAt: Date.now() + 24 * 60 * 60 * 1000, //24hr
     });
+    console.log(data.email);
 
-    const resp = await sendVerificationEmail(
-      data.email,
-      data.verifyToken,
-      data.userName
-    );
     console.log(resp, "emaoling  ooooooo");
 
     return data;
