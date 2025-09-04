@@ -4,5 +4,6 @@ module.exports = {
   house_middleware: require("./house-midleware"),
   booking_middleware: require("./booking-middleware"),
   request_middleware: require("./request-middleware"),
-  auth_middleware: require("./auth-midleware")
+  auth_middleware: require("./auth-midleware"),
+  profile_multer: require("./profile-multer"),
 };

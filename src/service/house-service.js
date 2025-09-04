@@ -12,8 +12,8 @@ async function find_house(object) {
   return newcrudRepositoryExtra.filter(object);
 }
 
-async function update_house(object) {
-  return newnewcrudRepositoryExtra.update(object);
+async function update_house(id, object) {
+  return newcrudRepositoryExtra.update(id, object);
 }
 
 async function get_details(id) {

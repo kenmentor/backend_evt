@@ -98,21 +98,33 @@ async function upload_house(req, res) {
     });
   }
 }
-
 async function update_house(req, res) {
   try {
-    const { body } = req;
+    const { body, params } = req;
+    const { id } = params;
 
     if (body.price) {
       body.price = Number(body.price);
     }
-    const data = house_service.update_house({ body });
-    const responseData = response.goodResponse;
+
+    const data = await house_service.update_house(id, body);
+
+    const responseData = {
+      ...response.goodResponse,
+      data,
+    };
+
     res.json(responseData);
   } catch (err) {
-    throw err;
+    console.error("Update house error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update house",
+      error: err.message,
+    });
   }
 }
+
 async function delete_house(req, res) {
   console.log("commmmmmmmmm");
   const id = await req.body.id;

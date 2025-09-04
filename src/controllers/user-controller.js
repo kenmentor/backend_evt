@@ -2,6 +2,7 @@ const { response, mailer } = require("../utility");
 const { user_service, verification_service } = require("../service");
 require("dotenv").config();
 const mongoose = require("mongoose");
+const cloudinary = require("cloudinary").v2;
 
 const { generateTokenAndSetCookie } = require("../utility");
 const bcrypt = require("bcryptjs/dist/bcrypt");
@@ -37,25 +38,57 @@ async function get_user(req, res) {
 }
 
 async function edit_user_detail(req, res) {
+  const id = req.params.id;
+  const { body, file } = req;
+  console.log(filses);
+  const uploadBufferToCloudinary = (fileBuffer, folder = "user") => {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          resource_type: "auto",
+          timeout: 600000, // 10 minutes
+        },
+        (error, result) => {
+          if (result) resolve(result);
+          else reject(error);
+        }
+      );
+      stream.end(fileBuffer);
+    });
+  };
+
+  let profileImageUrl = "";
+  if (file.profileImage?.length > 0) {
+    const result = await uploadBufferToCloudinary(
+      file.profileImage[0].buffer,
+      "profileImage"
+    );
+    profileImageUrl = result.secure_url;
+  }
   try {
-    const id = await req.params.id;
-    const { body } = await req;
     let object = {
       email: body.email,
       phoneNumber: body.phoneNumber,
     };
 
+    object.profileImage = profileImageUrl;
+    // Handle Cloudinary upload
+
     const data = await user_service.edit_user_details(id, object);
-    const responseData = response.goodResponse;
-    responseData.message = "usefully edited your profil ";
+
+    const responseData = { ...response.goodResponse };
+    responseData.message = "Successfully updated your profile";
     responseData.data = data;
+
     return res.json(responseData);
   } catch (err) {
-    const responseData = response.badResponse;
-    responseData.message = `something went wrong ${err}`;
-    return res.json();
+    const responseData = { ...response.badResponse };
+    responseData.message = `Something went wrong: ${err.message || err}`;
+    return res.json(responseData);
   }
 }
+
 function logout_user(req, res) {
   const { goodResponse } = response;
 

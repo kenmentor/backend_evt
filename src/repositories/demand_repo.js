@@ -98,6 +98,7 @@ class demand_repo extends crudRepositoryExtra {
 
       // 📉 Fallback: if no results, return recent listings
       if (results.length === 0) {
+        console.log("not found dddddddddddddddddddd");
         // Try a looser match first (any field that contains search terms)
         const looseQuery = {
           $or: textFilters

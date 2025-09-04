@@ -12,7 +12,7 @@ class house_repo extends crudRepositoryExtra {
     try {
       const data = await this.module
         .findById(id)
-        .populate("host", "phoneNumber -_id"); // populate only phoneNumber, exclude _id
+        .populate("host", "phoneNumber _id"); // populate only phoneNumber, exclude _id
 
       if (!data) {
         throw new Error("Resource not found");
@@ -24,7 +24,18 @@ class house_repo extends crudRepositoryExtra {
       throw new Error(error.message || "Failed to fetch resource");
     }
   }
+  async create(object) {
+    const count = await this.module.countDocuments();
+    try {
+      const newmodule = new this.module({ ...object });
 
+      const data = await newmodule.save();
+      return data;
+    } catch (err) {
+      console.log("error while creating data -crud");
+      throw err;
+    }
+  }
   async filter(filter) {
     try {
       let query = {};
@@ -90,6 +101,9 @@ class house_repo extends crudRepositoryExtra {
         .limit(limit)
         .skip(skip)
         .sort(sort);
+      if (results.length !== 0) {
+        return results;
+      }
 
       // 🟡 Step 2: Expand price tolerance if no results
       if (results.length === 0 && (!isNaN(min) || !isNaN(max))) {
@@ -102,6 +116,9 @@ class house_repo extends crudRepositoryExtra {
           .limit(limit)
           .skip(skip)
           .sort(sort);
+        if (results.length !== 0) {
+          return results;
+        }
       }
 
       // 🔵 Step 3: Loose regex fallback if still nothing
@@ -117,16 +134,19 @@ class house_repo extends crudRepositoryExtra {
           .limit(limit)
           .skip(skip)
           .sort({ createdAt: -1 });
+        if (results.length !== 0) {
+          return results;
+        }
       }
 
       // 🔴 Step 4: Absolute fallback → return latest houses
-      if (results.length === 0) {
-        results = await this.module
-          .find({})
-          .limit(limit)
-          .skip(skip)
-          .sort({ createdAt: -1 });
-      }
+      // if (results.length === 0) {
+      //   results = await this.module
+      //     .find({})
+      //     .limit(limit)
+      //     .skip(skip)
+      //     .sort({ createdAt: -1 });
+      // }
 
       console.log("✅ Final Results:", results.length);
       return results;
