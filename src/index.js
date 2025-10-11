@@ -15,7 +15,7 @@ app.use(
       "https://agent-with-me-frountend.vercel.app",
       "http://localhost:3000",
       "http://localhost:3001",
-      "agent-with-me-v2.vercel.app",
+      "https://agent-with-me-v2.vercel.app",
     ], // remove space before http
     credentials: true,
   })
