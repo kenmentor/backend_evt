@@ -12,7 +12,8 @@ class house_repo extends crudRepositoryExtra {
     try {
       const data = await this.module
         .findById(id)
-        .populate("host", "phoneNumber _id"); // populate only phoneNumber, exclude _id
+        .populate("host", "phoneNumber  _id userName email avatar");
+      // populate only phoneNumber, exclude _id
 
       if (!data) {
         throw new Error("Resource not found");
