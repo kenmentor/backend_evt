@@ -32,7 +32,8 @@ function populateBooking(query) {
   return query
     .populate({
       path: "host",
-      select: "userName phoneNumber email",
+      select:
+        "userName phoneNumber email adminVerified rank verificationCompleted profileImage",
     })
     .populate({
       path: "guest",
