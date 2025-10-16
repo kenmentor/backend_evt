@@ -84,7 +84,7 @@ async function upload_house(files, body) {
   let video = "";
   if (files.video?.length > 0) {
     const result = await uploadBufferToCloudinary(
-      files.thumbnail[0].buffer,
+      files.video[0].buffer,
       "video"
     );
     video = result.secure_url;
@@ -108,13 +108,23 @@ async function upload_house(files, body) {
   body.electricity = Number(body.electricity);
   body.price = Number(body.price);
   body.electricity = Number(body.electricity);
-  body.bedrooms = Number(body.bedrooms);
-  body.bathrooms = Number(body.bathrooms);
+  body.bedroom = Number(body.bedroom);
+  body.bathroom = Number(body.bathroom);
   body.area = Number(body.area);
   body.floor = Number(body.floor);
   body.totalFloors = Number(body.totalFloors);
-
+  body.age = Number(body.age[0]);
   body.waterSuply = Boolean(body.waterSuply);
+
+  console.log(
+    body.bedroom,
+    body.bathrooms,
+    body.area,
+    body.floor,
+    body.totalFloors,
+    body.age
+  );
+
   // body.host = Object(body.host);
 
   const data = await newcrudRepositoryExtra.create(body);
