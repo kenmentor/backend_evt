@@ -13,32 +13,32 @@ const resourceSchema = new mongoose.Schema(
     description: { type: String, required: true },
     type: { type: String, required: true },
     category: { type: String, required: true },
-    price: { type: Number, required: true },
+    price: { type: String, required: true }, // frontend sends string, not number
 
     // Location
     location: { type: String, required: true },
     address: { type: String, required: true },
     state: { type: String, required: true },
-    lga: { type: String },
+    lga: { type: String, default: "" },
 
     // Property Details
-    bedrooms: { type: Number },
-    bathrooms: { type: Number },
-    area: { type: Number }, // could be in sq ft or sq m
-    furnishing: { type: String }, // e.g., "Furnished", "Unfurnished"
-    floor: { type: Number },
-    totalFloors: { type: Number },
-    age: { type: Number }, // property age in years
+    bedrooms: { type: Number, default: 1 },
+    bathrooms: { type: Number, default: 1 },
+    area: { type: Number, default: 0 },
+    furnishing: { type: String, default: "" },
+    floor: { type: Number, default: 1 },
+    totalFloors: { type: String, default: "" },
+    age: { type: Number, default: 0 },
     waterSuply: { type: Boolean, default: true },
     electricity: { type: Number, default: 0 },
 
     // Amenities
-    amenities: [{ type: String }],
+    amenities: [{ type: String, default: [] }],
 
     // Media
-    images: [{ type: String }], // store file URLs or S3 paths
-    video: { type: String }, // URL or path
-    thumbnail: { type: String }, // URL or path
+    images: [{ type: String, default: [] }], // will store file URLs or paths
+    video: { type: String, default: null },
+    thumbnail: { type: String, default: null },
 
     // Contact
     contactPreference: {
@@ -46,7 +46,7 @@ const resourceSchema = new mongoose.Schema(
       enum: ["phone", "email", "both"],
       default: "both",
     },
-    availableFrom: { type: Date },
+    availableFrom: { type: String, default: "" },
 
     // Other
     views: { type: Number, default: 0 },
@@ -55,7 +55,7 @@ const resourceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Add indexes for fast queries
-resourceSchema.index({ location: "text", type: "text", category: "text" }); // Full-text search
+// Full-text search index
+resourceSchema.index({ location: "text", type: "text", category: "text" });
 
 module.exports = mongoose.model("Resource", resourceSchema);

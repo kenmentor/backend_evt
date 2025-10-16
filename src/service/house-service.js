@@ -81,6 +81,14 @@ async function upload_house(files, body) {
     );
     thumbnailUrl = result.secure_url;
   }
+  let video = "";
+  if (files.video?.length > 0) {
+    const result = await uploadBufferToCloudinary(
+      files.thumbnail[0].buffer,
+      "video"
+    );
+    video = result.secure_url;
+  }
 
   let gallery = [];
   if (files.files?.length > 0) {
@@ -95,9 +103,17 @@ async function upload_house(files, body) {
   }
 
   body.thumbnail = thumbnailUrl;
+  body.video = video;
   body.gallery = gallery;
   body.electricity = Number(body.electricity);
   body.price = Number(body.price);
+  body.electricity = Number(body.electricity);
+  body.bedrooms = Number(body.bedrooms);
+  body.bathrooms = Number(body.bathrooms);
+  body.area = Number(body.area);
+  body.floor = Number(body.floor);
+  body.totalFloors = Number(body.totalFloors);
+
   body.waterSuply = Boolean(body.waterSuply);
   // body.host = Object(body.host);
 

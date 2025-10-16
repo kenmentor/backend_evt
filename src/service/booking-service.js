@@ -7,7 +7,9 @@ const Booking_repo = new booking_repo(bookingDB);
 async function create_booking(object) {
   // Get the house details (for price, etc.)
   const house = await house_service.get_details(object.houseId);
-
+  await house_service.update_house(object.houseId, {
+    avaliable: false,
+  });
   const data = await Booking_repo.create({
     host: object.hostId,
     guest: object.guestId,

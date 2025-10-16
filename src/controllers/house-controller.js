@@ -1,8 +1,15 @@
 const { house_service } = require("../service");
 const { response } = require("../utility");
 
+function populatehouse(query) {
+  return query.populate({
+    path: "host",
+    select:
+      "userName phoneNumber email adminVerified rank verificationCompleted profileImage",
+  });
+}
 const get_house_detail = async (req, res) => {
-  console.log("commmmmmmmmm");
+  console.log();
   try {
     const { id } = req.params;
     if (!id) {
@@ -13,7 +20,8 @@ const get_house_detail = async (req, res) => {
     console.log(id, "this id jbfyfyuf by");
     const data = await house_service.get_details(id); // ✅ Pass correct ID
     const responseData = response.goodResponse;
-    responseData.data = data;
+    responseData.data = await populatehouse(data);
+    console.log(responseData, "response data");
     res.json(responseData).status(200);
   } catch (error) {
     console.error("Error fetching resource:", error);
