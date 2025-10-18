@@ -72,7 +72,7 @@ async function Payment_webhook(req, res) {
  */
 async function initializeBankTransfer(req, res) {
   const { email, amount, guestId, hostId, houseId } = req.body;
-
+  console.log(req.body);
   if (!email || !amount || !guestId || !hostId || !houseId) {
     return res.status(400).json({
       status: "error",
@@ -83,7 +83,7 @@ async function initializeBankTransfer(req, res) {
   try {
     const data = await paymentService.initializeBank({
       email,
-      price: amount,
+      amount: amount,
       guest: guestId,
       host: hostId,
       house: houseId,

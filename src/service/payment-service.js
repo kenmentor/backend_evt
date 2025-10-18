@@ -13,9 +13,10 @@ async function initializeBank({ email, amount, guest, host, house }) {
     // ✅ Get house details by house ID, not host
     const houseDetails = await get_details(house);
 
-    if (!houseDetails.available) {
+    if (!houseDetails.avaliable) {
       throw new Error("This house has already been booked");
     }
+    console.log(amount);
 
     // ✅ Initialize Paystack transaction
     const res = await axios.post(
