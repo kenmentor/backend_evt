@@ -90,11 +90,11 @@ async function upload_house(files, body) {
     video = result.secure_url;
   }
 
-  let gallery = [];
+  let images = [];
   if (files.files?.length > 0) {
-    gallery = await Promise.all(
+    images = await Promise.all(
       files.files.map((file) =>
-        uploadBufferToCloudinary(file.buffer, "gallery").then((result) => ({
+        uploadBufferToCloudinary(file.buffer, "images").then((result) => ({
           url: result.secure_url,
           type: file.mimetype,
         }))
@@ -102,9 +102,10 @@ async function upload_house(files, body) {
     );
   }
 
+  console.log("Uploaded URLs:", { thumbnailUrl, video, images });
   body.thumbnail = thumbnailUrl;
   body.video = video;
-  body.gallery = gallery;
+  body.images = images;
   body.electricity = Number(body.electricity);
   body.price = Number(body.price);
   body.electricity = Number(body.electricity);
@@ -126,8 +127,9 @@ async function upload_house(files, body) {
   );
 
   // body.host = Object(body.host);
-
+  console.log("Final body to be saved:", body);
   const data = await newcrudRepositoryExtra.create(body);
+  console.log("Saved data:", data);
   await data.save();
   return data;
 }

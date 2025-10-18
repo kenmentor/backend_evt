@@ -16,7 +16,7 @@ const resourceSchema = new mongoose.Schema(
     price: { type: String, required: true }, // frontend sends string, not number
 
     // Location
-    location: { type: String, required: true },
+
     address: { type: String, required: true },
     state: { type: String, required: true },
     lga: { type: String, default: "" },
@@ -36,7 +36,12 @@ const resourceSchema = new mongoose.Schema(
     amenities: [{ type: String, default: [] }],
 
     // Media
-    images: [{ type: String, default: [] }], // will store file URLs or paths
+    images: [
+      {
+        url: { type: String, required: true },
+        type: { type: String, default: "image/png" },
+      },
+    ],
     video: { type: String, default: null },
     thumbnail: { type: String, default: null },
 
