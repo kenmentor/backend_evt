@@ -5,8 +5,8 @@ const { paymentDB, bookingDB, resourceDB } = require("../modules/");
 const { crudRepository } = require("../repositories");
 const mongoose = require("mongoose");
 require("dotenv").config();
-const payment = new crudRepository(paymentDB);
-const booking = new crudRepository(bookingDB);
+const Payment = new crudRepository(paymentDB);
+const Booking = new crudRepository(bookingDB);
 const House = new crudRepository(resourceDB);
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET;
