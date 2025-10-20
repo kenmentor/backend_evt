@@ -3,6 +3,7 @@ const { get_details } = require("./house-service");
 const { connectDB } = require("../utility");
 const { paymentDB, bookingDB, resourceDB } = require("../modules/");
 const { crudRepository } = require("../repositories");
+const mongoose = require("mongoose");
 require("dotenv").config();
 const payment = new crudRepository(paymentDB);
 const booking = new crudRepository(bookingDB);
