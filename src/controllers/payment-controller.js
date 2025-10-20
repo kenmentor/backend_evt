@@ -19,6 +19,7 @@ async function Payment_webhook(req, res) {
     console.log("Received Paystack webhook");
 
     if (hash !== req.headers["x-paystack-signature"]) {
+      console.error("Invalid Paystack signature");
       return res.status(401).json({
         status: "error",
         message: "Invalid signature",
@@ -30,6 +31,7 @@ async function Payment_webhook(req, res) {
     switch (event.event) {
       case "charge.success":
         {
+          console.log("Received Paystack webhook");
           const { email, guest, host, house, price, checkIn, checkOut } =
             event.data.metadata;
 
