@@ -7,4 +7,5 @@ module.exports = {
   bookingDB: require("./booking"),
   requestDB: require("./request"),
   demandDB: require("./demand"),
+  paymentDB: require("./payment"),
 };

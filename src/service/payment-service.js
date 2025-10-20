@@ -1,7 +1,12 @@
 const axios = require("axios");
 const { get_details } = require("./house-service");
 const { connectDB } = require("../utility");
+const { paymentDB, bookingDB, resourceDB } = require("../modules/");
+const { crudRepository } = require("../repositories");
 require("dotenv").config();
+const payment = new crudRepository(paymentDB);
+const booking = new crudRepository(bookingDB);
+const house = new crudRepository(resourceDB);
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET;
 
@@ -81,8 +86,7 @@ async function Payment_webhook({
   checkOut,
   PaymentRef,
 }) {
-  console.log("Processing webhook for payment ref:", PaymentRef);
-  const db = await connectDB();
+  const db = await payment.startSession();
 
   // ✅ Verify payment from Paystack first
   const checkPayment = await check_payment(PaymentRef);
@@ -93,13 +97,13 @@ async function Payment_webhook({
       throw new Error("Payment verification failed");
     }
 
-    await db.$transaction(async (tx) => {
+    await db.withTransaction(async () => {
       // ✅ Standardize values
       const paidAmount = amount / 100; // convert kobo → naira
 
       if (paidAmount === price) {
         // Save payment
-        await tx.payment.create({
+        await payment.create({
           data: {
             host,
             guest,
@@ -112,7 +116,7 @@ async function Payment_webhook({
         });
 
         // Create booking
-        await tx.booking.create({
+        await booking.create({
           data: {
             host,
             guest,
@@ -127,7 +131,7 @@ async function Payment_webhook({
         });
 
         // Update house availability
-        await tx.house.update({
+        await house.update({
           where: { id: house },
           data: { available: false },
         });
@@ -136,7 +140,7 @@ async function Payment_webhook({
       if (paidAmount > price) {
         const refundAmount = paidAmount - price;
 
-        await tx.payment.create({
+        await payment.create({
           data: {
             host,
             guest,
@@ -149,7 +153,7 @@ async function Payment_webhook({
           },
         });
 
-        await tx.booking.create({
+        await booking.create({
           data: {
             host,
             guest,
@@ -163,7 +167,7 @@ async function Payment_webhook({
           },
         });
 
-        await tx.house.update({
+        await house.update({
           where: { id: house },
           data: { available: false },
         });
