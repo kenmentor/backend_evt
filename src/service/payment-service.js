@@ -76,6 +76,7 @@ async function initializeBank({ email, amount, guest, host, house }) {
 /**
  * Webhook Processing
  */
+
 async function Payment_webhook({
   guest,
   host,
@@ -86,26 +87,27 @@ async function Payment_webhook({
   checkOut,
   PaymentRef,
 }) {
-  const session = await payment.startSession();
-
-  // ✅ Verify payment from Paystack first
-  const checkPayment = await check_payment(PaymentRef);
-  const paid = checkPayment.status === "success";
+  // Start a session from mongoose
+  const session = await mongoose.startSession();
 
   try {
-    if (!paid) {
-      throw new Error("Payment verification failed");
-    }
-
+    // Use withTransaction helper to wrap everything
     await session.withTransaction(async () => {
-      // ✅ Standardize values
+      // ✅ Verify payment from Paystack first
+      const checkPayment = await check_payment(PaymentRef);
+      const paid = checkPayment.status === "success";
+
+      if (!paid) {
+        throw new Error("Payment verification failed");
+      }
+
       const paidAmount = amount / 100; // convert kobo → naira
 
       if (paidAmount === price) {
         // Save payment
-        await payment
-          .create({
-            data: {
+        await Payment.create(
+          [
+            {
               host,
               guest,
               house,
@@ -114,14 +116,14 @@ async function Payment_webhook({
               paymentStatus: "paid",
               paymentRef: PaymentRef,
             },
-          })
-          .session(session)
-          .exec();
+          ],
+          { session }
+        );
 
         // Create booking
-        await booking
-          .create({
-            data: {
+        await Booking.create(
+          [
+            {
               host,
               guest,
               amount: paidAmount,
@@ -132,25 +134,22 @@ async function Payment_webhook({
               checkIn,
               checkOut,
             },
-          })
-          .session(session)
-          .exec();
+          ],
+          { session }
+        );
 
         // Update house availability
-        await House.update({
-          where: { id: house },
-          data: { available: false },
-        })
-          .session(session)
-          .exec();
-      }
-
-      if (paidAmount > price) {
+        await House.updateOne(
+          { _id: house },
+          { available: false },
+          { session }
+        );
+      } else if (paidAmount > price) {
         const refundAmount = paidAmount - price;
 
-        await payment
-          .create({
-            data: {
+        await Payment.create(
+          [
+            {
               host,
               guest,
               house,
@@ -160,13 +159,13 @@ async function Payment_webhook({
               refund: refundAmount,
               paymentRef: PaymentRef,
             },
-          })
-          .session(session)
-          .exec();
+          ],
+          { session }
+        );
 
-        await booking
-          .create({
-            data: {
+        await Booking.create(
+          [
+            {
               host,
               guest,
               amount: paidAmount,
@@ -177,35 +176,33 @@ async function Payment_webhook({
               checkIn,
               checkOut,
             },
-          })
-          .session(session)
-          .exec();
-        await house
-          .update({
-            where: { id: house },
-            data: { available: false },
-          })
-          .session(session)
-          .exec();
+          ],
+          { session }
+        );
 
-        // Trigger actual refund API here
+        await House.updateOne(
+          { _id: house },
+          { available: false },
+          { session }
+        );
+
+        // Actually issue refund
         await refund(PaymentRef, refundAmount);
-      }
-
-      if (paidAmount < price) {
+      } else {
+        // Underpaid
         throw new Error("Insufficient payment received");
       }
-    });
+    }); // end withTransaction
+
+    // If everything succeeded, you get here
   } catch (error) {
     console.error("Webhook transaction error:", error.message);
-
-    // Rollback: mark house available again
-    await session.house.update({
-      where: { id: house },
-      data: { available: true },
-    });
+    // You might want to do additional rollback logic if needed
 
     throw error;
+  } finally {
+    // Always end session
+    session.endSession();
   }
 }
 
