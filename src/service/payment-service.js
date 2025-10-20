@@ -6,7 +6,7 @@ const { crudRepository } = require("../repositories");
 require("dotenv").config();
 const payment = new crudRepository(paymentDB);
 const booking = new crudRepository(bookingDB);
-const house = new crudRepository(resourceDB);
+const House = new crudRepository(resourceDB);
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET;
 
@@ -131,7 +131,7 @@ async function Payment_webhook({
         });
 
         // Update house availability
-        await house.update({
+        await House.update({
           where: { id: house },
           data: { available: false },
         });
