@@ -10,10 +10,13 @@ const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET || "hello";
  */
 async function Payment_webhook(req, res) {
   try {
+    await console.log("Received Paystack webhook");
+    await console.log("Received Paystack webhook");
     const hash = crypto
       .createHmac("sha512", PAYSTACK_SECRET)
       .update(JSON.stringify(req.body))
       .digest("hex");
+    console.log("Received Paystack webhook");
 
     if (hash !== req.headers["x-paystack-signature"]) {
       return res.status(401).json({
@@ -23,17 +26,17 @@ async function Payment_webhook(req, res) {
     }
 
     const event = req.body;
-
+    console.log("Received Paystack webhook");
     switch (event.event) {
       case "charge.success":
-        if (event.data.channel === "bank_transfer") {
+        {
           const { email, guest, host, house, price, checkIn, checkOut } =
             event.data.metadata;
 
           const PaymentRef = event.data.reference;
           const amount = event.data.amount;
 
-          await paymentService.Payment_webhook({
+          const payment = await paymentService.Payment_webhook({
             email,
             guest,
             host,
@@ -44,7 +47,7 @@ async function Payment_webhook(req, res) {
             checkOut,
             PaymentRef,
           });
-
+          console.log("Payment processed:", payment);
           return res.json({
             status: "success",
             message: "Transaction successful",

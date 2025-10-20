@@ -24,7 +24,7 @@ async function initializeBank({ email, amount, guest, host, house }) {
       {
         email,
         amount: amount * 100,
-        channels: ["bank_transfer"],
+        // channels: ["bank_transfer"],
         metadata: {
           guest,
           host,
@@ -81,6 +81,7 @@ async function Payment_webhook({
   checkOut,
   PaymentRef,
 }) {
+  console.log("Processing webhook for payment ref:", PaymentRef);
   const db = await connectDB();
 
   // ✅ Verify payment from Paystack first

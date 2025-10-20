@@ -44,6 +44,14 @@ const bookingSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    expiredDate: {
+      type: Date,
+      default: () => {
+        const now = new Date();
+        now.setDate(now.getDate() + 3); // adds 3 days
+        return now;
+      },
+    },
   },
   { timestamps: true }
 );

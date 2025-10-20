@@ -33,7 +33,15 @@ async function get_all_booking(req, res) {
 
     const Response = response.goodResponse;
     const data = await booking_service.get_all_booking(userId, role);
-    return res.json((Response.data = data));
+    const updatedBookings = data.map((b) => {
+      const checkInDate = new Date(b.checkIn);
+      const expired = b.expiredDate
+        ? new Date(b.expiredDate)
+        : new Date(checkInDate.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+      return { ...b, expiredDate: expired.toISOString() };
+    });
+    return res.json((Response.data = updatedBookings));
   } catch (error) {
     console.log(error);
   }
