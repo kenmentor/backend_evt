@@ -86,7 +86,7 @@ async function Payment_webhook({
   checkOut,
   PaymentRef,
 }) {
-  const db = await payment.startSession();
+  const session = await payment.startSession();
 
   // ✅ Verify payment from Paystack first
   const checkPayment = await check_payment(PaymentRef);
@@ -97,80 +97,96 @@ async function Payment_webhook({
       throw new Error("Payment verification failed");
     }
 
-    await db.withTransaction(async () => {
+    await session.withTransaction(async () => {
       // ✅ Standardize values
       const paidAmount = amount / 100; // convert kobo → naira
 
       if (paidAmount === price) {
         // Save payment
-        await payment.create({
-          data: {
-            host,
-            guest,
-            house,
-            amount: paidAmount,
-            status: "success",
-            paymentStatus: "paid",
-            paymentRef: PaymentRef,
-          },
-        });
+        await payment
+          .create({
+            data: {
+              host,
+              guest,
+              house,
+              amount: paidAmount,
+              status: "success",
+              paymentStatus: "paid",
+              paymentRef: PaymentRef,
+            },
+          })
+          .session(session)
+          .exec();
 
         // Create booking
-        await booking.create({
-          data: {
-            host,
-            guest,
-            amount: paidAmount,
-            house,
-            status: "success",
-            platformFee: paidAmount * 0.05,
-            paymentId: PaymentRef,
-            checkIn,
-            checkOut,
-          },
-        });
+        await booking
+          .create({
+            data: {
+              host,
+              guest,
+              amount: paidAmount,
+              house,
+              status: "success",
+              platformFee: paidAmount * 0.05,
+              paymentId: PaymentRef,
+              checkIn,
+              checkOut,
+            },
+          })
+          .session(session)
+          .exec();
 
         // Update house availability
         await House.update({
           where: { id: house },
           data: { available: false },
-        });
+        })
+          .session(session)
+          .exec();
       }
 
       if (paidAmount > price) {
         const refundAmount = paidAmount - price;
 
-        await payment.create({
-          data: {
-            host,
-            guest,
-            house,
-            amount: paidAmount,
-            status: "success",
-            paymentStatus: "overpaid",
-            refund: refundAmount,
-            paymentRef: PaymentRef,
-          },
-        });
+        await payment
+          .create({
+            data: {
+              host,
+              guest,
+              house,
+              amount: paidAmount,
+              status: "success",
+              paymentStatus: "overpaid",
+              refund: refundAmount,
+              paymentRef: PaymentRef,
+            },
+          })
+          .session(session)
+          .exec();
 
-        await booking.create({
-          data: {
-            host,
-            guest,
-            amount: paidAmount,
-            house,
-            status: "success",
-            platformFee: paidAmount * 0.05,
-            paymentId: PaymentRef,
-            checkIn,
-            checkOut,
-          },
-        });
-
-        await house.update({
-          where: { id: house },
-          data: { available: false },
-        });
+        await booking
+          .create({
+            data: {
+              host,
+              guest,
+              amount: paidAmount,
+              house,
+              status: "success",
+              platformFee: paidAmount * 0.05,
+              paymentId: PaymentRef,
+              checkIn,
+              checkOut,
+            },
+          })
+          .session(session)
+          .exec();
+        await house
+          .update({
+            where: { id: house },
+            data: { available: false },
+          })
+          .session(session)
+          .exec();
 
         // Trigger actual refund API here
         await refund(PaymentRef, refundAmount);
@@ -184,7 +200,7 @@ async function Payment_webhook({
     console.error("Webhook transaction error:", error.message);
 
     // Rollback: mark house available again
-    await db.house.update({
+    await session.house.update({
       where: { id: house },
       data: { available: true },
     });
