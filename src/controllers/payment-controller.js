@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { response, connectDB } = require("../utility");
 const { paymentService } = require("../service");
+require("dotenv").config();
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET || "hello";
 
@@ -17,7 +18,7 @@ async function Payment_webhook(req, res) {
       .update(JSON.stringify(req.body))
       .digest("hex");
     console.log("Received Paystack webhook");
-
+    console.log("payment hash ", hash);
     if (hash !== req.headers["x-paystack-signature"]) {
       console.error("Invalid Paystack signature");
       return res.status(401).json({
