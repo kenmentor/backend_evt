@@ -103,7 +103,9 @@ async function Payment_webhook({
       }
 
       const paidAmount = amount / 100; // convert kobo → naira
-
+      console.log("Paid Amount:", paidAmount);
+      console.log("Expected Price:", price);
+      console.log("amount:", amount);
       if (paidAmount === price) {
         // Save payment
         await Payment.create(
@@ -191,6 +193,16 @@ async function Payment_webhook({
         await refund(PaymentRef, refundAmount);
       } else {
         // Underpaid
+        await Payment.create({
+          host,
+          guest,
+          house,
+          amount: paidAmount,
+          status: "success",
+          paymentStatus: "overpaid",
+          refund: refundAmount,
+          paymentRef: PaymentRef,
+        });
         throw new Error("Insufficient payment received");
       }
     }); // end withTransaction
