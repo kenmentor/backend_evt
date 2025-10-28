@@ -38,6 +38,7 @@ class house_repo extends crudRepositoryExtra {
     }
   }
   async filter(filter) {
+    console.log("hellllo", filter.hostId);
     try {
       let query = {
         avaliable: true,
@@ -70,7 +71,7 @@ class house_repo extends crudRepositoryExtra {
         query._id = { $ne: mongoose.Types.ObjectId(filter.id) };
       }
       if (filter.hostId) {
-        query.hostId = filter.hostId;
+        query.host = filter.hostId;
       }
 
       // 💰 Price filter with adaptive tolerance
