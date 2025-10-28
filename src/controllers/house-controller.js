@@ -28,13 +28,16 @@ const get_house_detail = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch resource" }); // ✅ Send error response
   }
 };
+
 async function get_house(req, res) {
   console.log("Incoming query params:", req.query);
+  const mongoose = require("mongoose");
 
   // Destructure based on keyword interface (include new fields)
   const {
     type,
     min,
+
     max,
     searchWord,
     limit,
@@ -60,6 +63,7 @@ async function get_house(req, res) {
       amenities: amenities ? amenities.split(",") : undefined, // ✅ handle multiple
       category,
       id,
+
       hostId,
     });
 

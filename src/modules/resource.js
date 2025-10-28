@@ -24,13 +24,8 @@ const resourceSchema = new mongoose.Schema(
     // Property Details
     bedrooms: { type: Number, default: 1 },
     bathrooms: { type: Number, default: 1 },
-    area: { type: Number, default: 0 },
+
     furnishing: { type: String, default: "" },
-    floor: { type: Number, default: 1 },
-    totalFloors: { type: String, default: "" },
-    age: { type: Number, default: 0 },
-    waterSuply: { type: Boolean, default: true },
-    electricity: { type: Number, default: 0 },
 
     // Amenities
     amenities: [{ type: String, default: [] }],
@@ -44,14 +39,6 @@ const resourceSchema = new mongoose.Schema(
     ],
     video: { type: String, default: null },
     thumbnail: { type: String, default: null },
-
-    // Contact
-    contactPreference: {
-      type: String,
-      enum: ["phone", "email", "both"],
-      default: "both",
-    },
-    availableFrom: { type: String, default: "" },
 
     // Other
     views: { type: Number, default: 0 },

@@ -39,6 +39,7 @@ class house_repo extends crudRepositoryExtra {
   }
   async filter(filter) {
     console.log("hellllo", filter.hostId);
+
     try {
       let query = {
         avaliable: true,

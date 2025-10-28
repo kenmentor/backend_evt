@@ -5,10 +5,9 @@ const { paymentDB, bookingDB, resourceDB } = require("../modules/");
 const { crudRepository } = require("../repositories");
 const mongoose = require("mongoose");
 const payment = require("../modules/payment");
+const payment_repo = require("../repositories/payment_repo");
 require("dotenv").config();
-const Payment = new crudRepository(paymentDB);
-const Booking = new crudRepository(bookingDB);
-const House = new crudRepository(resourceDB);
+const Payment = new payment_repo(paymentDB);
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET;
 
@@ -90,133 +89,20 @@ async function Payment_webhook({
   PaymentRef,
 }) {
   // Start a session from mongoose
-  const session = await mongoose.startSession();
-
   try {
-    // Use withTransaction helper to wrap everything
-    await session.withTransaction(async () => {
-      // ✅ Verify payment from Paystack first
-      const checkPayment = await check_payment(PaymentRef);
-      const paid = checkPayment.status === "success";
-
-      if (!paid) {
-        throw new Error("Payment verification failed");
-      }
-
-      const paidAmount = amount / 100; // convert kobo → naira
-      console.log("Paid Amount:", paidAmount);
-      console.log("Expected Price:", price);
-      console.log("amount:", amount);
-      if (paidAmount === price) {
-        // Save payment
-        await Payment.create(
-          [
-            {
-              host,
-              guest,
-              house,
-              amount: paidAmount,
-              status: "success",
-              paymentStatus: "paid",
-              paymentRef: PaymentRef,
-            },
-          ],
-          { session }
-        );
-
-        // Create booking
-        await Booking.create(
-          [
-            {
-              host,
-              guest,
-              amount: paidAmount,
-              house,
-              status: "success",
-              platformFee: paidAmount * 0.05,
-              paymentId: PaymentRef,
-              checkIn,
-              checkOut,
-            },
-          ],
-          { session }
-        );
-
-        // Update house availability
-        await House.updateOne(
-          { _id: house },
-          { available: false },
-          { session }
-        );
-      } else if (paidAmount > price) {
-        const refundAmount = paidAmount - price;
-
-        await Payment.create(
-          [
-            {
-              host,
-              guest,
-              house,
-              amount: paidAmount,
-              status: "success",
-              paymentStatus: "overpaid",
-              refund: refundAmount,
-              paymentRef: PaymentRef,
-            },
-          ],
-          { session }
-        );
-
-        await Booking.create(
-          [
-            {
-              host,
-              guest,
-              amount: paidAmount,
-              house,
-              status: "success",
-              platformFee: paidAmount * 0.05,
-              paymentId: PaymentRef,
-              checkIn,
-              checkOut,
-            },
-          ],
-          { session }
-        );
-
-        await House.updateOne(
-          { _id: house },
-          { available: false },
-          { session }
-        );
-
-        // Actually issue refund
-        await refund(PaymentRef, refundAmount);
-      } else {
-        // Underpaid
-        await Payment.create({
-          host,
-          guest,
-          house,
-          amount: paidAmount,
-          status: "success",
-          paymentStatus: "overpaid",
-          refund: refundAmount,
-          paymentRef: PaymentRef,
-        });
-        throw new Error("Insufficient payment received");
-      }
-    }); // end withTransaction
-
-    // If everything succeeded, you get here
+    const data = await Payment.processPayment({
+      guest,
+      host,
+      house,
+      amount,
+      price,
+      checkIn,
+      checkOut,
+      PaymentRef,
+    });
+    return data;
   } catch (error) {
-    console.error("Webhook transaction error:", error.message);
-    // You might want to do additional rollback logic if needed
-
     throw error;
-  } finally {
-    // Always end session
-    session.endSession();
   }
 }
 
