@@ -40,6 +40,8 @@ async function get_house(req, res) {
     limit,
     lga,
     state,
+    id,
+    hostId,
     landmark,
     amenities, // ✅ new
     category, // ✅ new
@@ -56,7 +58,9 @@ async function get_house(req, res) {
       state,
       landmark,
       amenities: amenities ? amenities.split(",") : undefined, // ✅ handle multiple
-      category, // ✅ optional filter
+      category,
+      id,
+      hostId,
     });
 
     const responseData = response.goodResponse;

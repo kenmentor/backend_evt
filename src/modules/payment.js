@@ -17,10 +17,14 @@ const paymentSchema = new mongoose.Schema(
       ref: "Resource",
       required: true,
     },
+    note: { type: String },
     amount: {
       type: Number,
       require: true,
       default: 0.0,
+    },
+    method: {
+      type: String,
     },
     refund: {
       type: Number,
@@ -35,6 +39,14 @@ const paymentSchema = new mongoose.Schema(
     paymentStatus: {
       type: String,
       default: "pending",
+      required: true,
+    },
+    reference: {
+      type: String,
+      required: true,
+    },
+    paymentRef: {
+      type: String,
       required: true,
     },
   },

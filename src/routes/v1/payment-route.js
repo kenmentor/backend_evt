@@ -29,5 +29,7 @@ router.post(
  * Used by frontend to verify transaction status
  */
 router.get("/check-payment/:reference", payment_control.checkPaymentStatus);
+//this is for getting user payment history
+router.get("/:id", payment_control.get_history);
 
 module.exports = router;

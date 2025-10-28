@@ -4,6 +4,7 @@ const { connectDB } = require("../utility");
 const { paymentDB, bookingDB, resourceDB } = require("../modules/");
 const { crudRepository } = require("../repositories");
 const mongoose = require("mongoose");
+const payment = require("../modules/payment");
 require("dotenv").config();
 const Payment = new crudRepository(paymentDB);
 const Booking = new crudRepository(bookingDB);
@@ -222,6 +223,10 @@ async function Payment_webhook({
 /**
  * Call Paystack Refund API
  */
+async function get_history(id) {
+  const data = await payment.findById(id);
+  return data;
+}
 async function refund(reference, amount) {
   try {
     const res = await axios.post(
@@ -277,4 +282,10 @@ async function check_payment(reference) {
   }
 }
 
-module.exports = { initializeBank, refund, Payment_webhook, check_payment };
+module.exports = {
+  initializeBank,
+  get_history,
+  refund,
+  Payment_webhook,
+  check_payment,
+};

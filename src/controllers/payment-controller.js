@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { response, connectDB } = require("../utility");
 const { paymentService } = require("../service");
+const { goodResponse } = require("../utility/response");
 require("dotenv").config();
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET || "hello";
@@ -155,9 +156,18 @@ async function checkPaymentStatus(req, res) {
     });
   }
 }
+async function get_history(req, res) {
+  const { id } = req.params;
+  const data = await paymentService.get_history(id);
+  res.json({
+    ...goodResponse,
+    data: data,
+  });
+}
 
 module.exports = {
   Payment_webhook,
   initializeBankTransfer,
   checkPaymentStatus,
+  get_history,
 };

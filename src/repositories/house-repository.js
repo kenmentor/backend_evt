@@ -69,6 +69,9 @@ class house_repo extends crudRepositoryExtra {
       if (filter.id && filter.id !== "undefined") {
         query._id = { $ne: mongoose.Types.ObjectId(filter.id) };
       }
+      if (filter.hostId) {
+        query.hostId = filter.hostId;
+      }
 
       // 💰 Price filter with adaptive tolerance
       let min = Number(filter.min);
