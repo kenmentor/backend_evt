@@ -39,7 +39,19 @@ async function Payment_webhook(req, res) {
 
           const PaymentRef = event.data.reference;
           const amount = event.data.amount;
-
+          console.log(
+            {
+              guest,
+              host,
+              house,
+              amount,
+              price,
+              checkIn,
+              checkOut,
+              PaymentRef,
+            },
+            "constroller"
+          );
           const payment = await paymentService.Payment_webhook({
             email,
             guest,

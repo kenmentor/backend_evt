@@ -90,6 +90,19 @@ async function Payment_webhook({
 }) {
   // Start a session from mongoose
   try {
+    console.log(
+      {
+        guest,
+        host,
+        house,
+        amount,
+        price,
+        checkIn,
+        checkOut,
+        PaymentRef,
+      },
+      "service"
+    );
     const data = await Payment.processPayment({
       guest,
       host,

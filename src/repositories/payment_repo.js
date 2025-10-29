@@ -27,6 +27,19 @@ class payment_repo extends crud {
     checkOut,
     PaymentRef,
   }) {
+    console.log(
+      {
+        guest,
+        host,
+        house,
+        amount,
+        price,
+        checkIn,
+        checkOut,
+        PaymentRef,
+      },
+      "controller"
+    );
     const session = await mongoose.startSession();
 
     try {
