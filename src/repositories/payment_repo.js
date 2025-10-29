@@ -9,7 +9,7 @@ class payment_repo extends crud {
     super(module);
     this.now = new Date();
     this.twelveMonthsLater = new Date();
-    this.twelveMonthsLater.setMonth(now.getMonth() + 12);
+    this.twelveMonthsLater.setMonth(this.now.getMonth() + 12);
   }
 
   /**
