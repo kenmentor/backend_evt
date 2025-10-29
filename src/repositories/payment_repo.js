@@ -7,6 +7,9 @@ const { check_payment, refund } = require("../utility/paystack-utils"); // hypot
 class payment_repo extends crud {
   constructor(module) {
     super(module);
+    this.now = new Date();
+    this.twelveMonthsLater = new Date();
+    this.twelveMonthsLater.setMonth(now.getMonth() + 12);
   }
 
   /**
@@ -17,14 +20,15 @@ class payment_repo extends crud {
    * - 🔁 Duplicate payment reference
    * - 🧩 Full DB transaction rollback on error
    */
+
   async processPayment({
     guest,
     host,
     house,
     amount,
     price,
-    checkIn,
-    checkOut,
+    checkIn = this.now,
+    checkOut = this.twelveMonthsLater,
     PaymentRef,
   }) {
     console.log(
