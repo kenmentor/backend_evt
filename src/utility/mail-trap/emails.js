@@ -6,19 +6,19 @@ const {
 } = require("./emailTemplate");
 
 // 🟢 Generalized send function
-// async function sendEmail(options) {
-//   try {
-//     const response = await client.sendMail({
-//       from: sender,
-//       ...options,
-//     });
-//     console.log("✅ Email sent:", response);
-//     return response;
-//   } catch (error) {
-//     console.error("❌ Email sending failed:", error);
-//     throw error;
-//   }
-// }
+async function sendEmail(options) {
+  // try {
+  //   const response = await client.sendMail({
+  //     from: sender,
+  //     ...options,
+  //   });
+  //   console.log("✅ Email sent:", response);
+  //   return response;
+  // } catch (error) {
+  //   console.error("❌ Email sending failed:", error);
+  //   throw error;
+  // }
+}
 
 // 🟡 Specific email helpers
 async function sendVerificationEmail(email, verificationToken, userName) {
