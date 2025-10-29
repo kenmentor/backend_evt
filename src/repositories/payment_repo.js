@@ -27,8 +27,8 @@ class payment_repo extends crud {
     house,
     amount,
     price,
-    checkIn = this.now,
-    checkOut = this.twelveMonthsLater,
+    checkIn,
+    checkOut,
     PaymentRef,
   }) {
     console.log(
@@ -74,6 +74,12 @@ class payment_repo extends crud {
           await this.module.create(
             [
               {
+                guest,
+
+                price,
+                checkIn,
+                checkOut,
+
                 host,
                 guest,
                 house,
@@ -127,6 +133,9 @@ class payment_repo extends crud {
                 status: "success",
                 paymentStatus: "overpaid",
                 paymentRef: PaymentRef,
+                checkIn,
+                checkOut,
+                price,
               },
             ],
             { session }
@@ -144,6 +153,8 @@ class payment_repo extends crud {
                 paymentId: PaymentRef,
                 checkIn,
                 checkOut,
+
+                price,
               },
             ],
             { session }
@@ -171,6 +182,9 @@ class payment_repo extends crud {
                 status: "failed",
                 paymentStatus: "underpaid",
                 paymentRef: PaymentRef,
+                checkIn,
+                checkOut,
+                price,
               },
             ],
             { session }
@@ -190,6 +204,9 @@ class payment_repo extends crud {
                 status: "failed",
                 paymentStatus: "underpaid",
                 paymentRef: PaymentRef,
+                checkIn,
+                checkOut,
+                price,
               },
             ],
             {

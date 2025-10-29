@@ -41,10 +41,7 @@ const paymentSchema = new mongoose.Schema(
       default: "pending",
       required: true,
     },
-    reference: {
-      type: String,
-      required: true,
-    },
+
     paymentRef: {
       type: String,
       required: true,

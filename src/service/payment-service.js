@@ -77,7 +77,6 @@ async function initializeBank({ email, amount, guest, host, house }) {
 /**
  * Webhook Processing
  */
-
 async function Payment_webhook({
   guest,
   host,
@@ -88,8 +87,8 @@ async function Payment_webhook({
   checkOut,
   PaymentRef,
 }) {
-  // Start a session from mongoose
   try {
+    // Log the incoming data for debugging
     console.log(
       {
         guest,
@@ -101,9 +100,16 @@ async function Payment_webhook({
         checkOut,
         PaymentRef,
       },
-      "service"
+      "Payment service input"
     );
-    const data = await Payment.processPayment({
+
+    // Basic sanity check to avoid mongoose validation errors
+    if (!guest || !host || !house || !amount || !PaymentRef) {
+      throw new Error("Missing required payment fields");
+    }
+
+    // Forward the data to the repository that handles transactions
+    const payment = await Payment.processPayment({
       guest,
       host,
       house,
@@ -113,8 +119,12 @@ async function Payment_webhook({
       checkOut,
       PaymentRef,
     });
-    return data;
+
+    console.log("Payment processed successfully:", payment);
+
+    return payment;
   } catch (error) {
+    console.error("Payment service error:", error.message);
     throw error;
   }
 }

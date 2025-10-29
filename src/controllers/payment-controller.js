@@ -34,36 +34,63 @@ async function Payment_webhook(req, res) {
       case "charge.success":
         {
           console.log("Received Paystack webhook");
-          const { email, guest, host, house, price, checkIn, checkOut } =
-            event.data.metadata;
 
-          const PaymentRef = event.data.reference;
-          const amount = event.data.amount;
-          console.log(
-            {
-              guest,
-              host,
-              house,
-              amount,
-              price,
-              checkIn,
-              checkOut,
-              PaymentRef,
-            },
-            "constroller"
-          );
-          const payment = await paymentService.Payment_webhook({
+          // Extract metadata
+          const {
+            metadata,
+            reference,
+            amount: rawAmount,
+            status: paystackStatus,
+          } = event.data;
+
+          const {
             email,
             guest,
             host,
             house,
             price,
-            amount,
+            checkIn: metadataCheckIn,
+            checkOut: metadataCheckOut,
+            note,
+            method,
+          } = metadata;
+
+          // Convert amount from kobo to naira
+          const amount = rawAmount / 100;
+
+          // Generate check-in and check-out dates if not provided
+          const checkIn = metadataCheckIn
+            ? new Date(metadataCheckIn)
+            : new Date();
+          const checkOut = metadataCheckOut
+            ? new Date(metadataCheckOut)
+            : new Date(new Date(checkIn).setMonth(checkIn.getMonth() + 12));
+
+          // Build payment data object fully compatible with your schema
+          const paymentData = {
+            host, // Required
+            guest, // Required
+            house, // Required
+            email, // Optional, useful for reference
+            amount, // Required
+            status: paystackStatus || "success", // Required
+            paymentStatus: "paid", // Set default to paid on success
+            reference: reference, // Required
+            paymentRef: reference, // Required
+            note: note || "",
+            method: method || "card", // or "bank_transfer" depending on your integration
             checkIn,
             checkOut,
-            PaymentRef,
-          });
+            price, // Optional, useful for verification
+          };
+
+          console.log("Extracted Payment Data:", paymentData);
+
+          // Call your service to process/save
+          const payment = await paymentService.Payment_webhook(paymentData);
+
           console.log("Payment processed:", payment);
+
           return res.json({
             status: "success",
             message: "Transaction successful",
