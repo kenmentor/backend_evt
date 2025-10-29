@@ -162,8 +162,24 @@ class payment_repo extends crud {
           throw new Error(
             `Underpayment detected: Paid ₦${paidAmount}, expected ₦${price}`
           );
+        } else {
+          this.create(
+            [
+              {
+                host,
+                guest,
+                house,
+                amount: paidAmount,
+                status: "failed",
+                paymentStatus: "underpaid",
+                paymentRef: PaymentRef,
+              },
+            ],
+            {
+              session,
+            }
+          );
         }
-
         // ✅ If we reach here, all is well
       });
     } catch (err) {

@@ -35,7 +35,7 @@ async function initializeBank({ email, amount, guest, host, house }) {
           guest,
           host,
           email,
-          price: houseDetails.amount, // store as naira, Paystack expects *100 already
+          price: houseDetails.price, // store as naira, Paystack expects *100 already
           house,
           checkIn: houseDetails.checkIn,
           checkOut: houseDetails.checkOut,
