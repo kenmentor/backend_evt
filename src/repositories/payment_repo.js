@@ -200,7 +200,7 @@ class payment_repo extends crud {
               house,
               amount: amount,
               status: "failed",
-              paymentStatus: "underpaid",
+              paymentStatus: "undefined",
               paymentRef: paymentRef,
               checkIn,
               checkOut,

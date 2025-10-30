@@ -81,7 +81,7 @@ async function Payment_webhook(req, res) {
             method: method || "card", // or "bank_transfer" depending on your integration
             checkIn,
             checkOut,
-            price, // Optional, useful for verification
+            price: Number(price), // Optional, useful for verification
           };
 
           console.log("Extracted Payment Data:", paymentData);
