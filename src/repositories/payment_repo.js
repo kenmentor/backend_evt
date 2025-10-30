@@ -65,7 +65,7 @@ class payment_repo extends crud {
         }
 
         // 3️⃣ Convert amount (kobo → naira)
-        const paidAmount = amount / 100;
+        const paidAmount = amount;
         console.log("💰 Paid:", paidAmount, "| Expected:", price);
 
         // 4️⃣ CASE: Exact Payment
