@@ -167,6 +167,7 @@ class house_repo extends crudRepositoryExtra {
   async losefilter(filter) {
     function queryBuilder(filter) {
       let query = {
+        avaliable: true,
         $or: [],
       };
     }
