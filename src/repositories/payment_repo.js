@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const crud = require("./CRUD");
-const House = require("./house-repository");
+const House = require("../modules/resource");
 const Booking = require("../modules/booking");
 const { check_payment, refund } = require("../utility/paystack-utils"); // hypothetical utility for Paystack
 
