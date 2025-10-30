@@ -96,21 +96,12 @@ async function Payment_webhook(paymentdata) {
         host,
         house,
         amount,
-        PaymentRef
+        paymentRef
       );
     }
 
     // Forward the data to the repository that handles transactions
-    const payment = await Payment.processPayment({
-      guest,
-      host,
-      house,
-      amount,
-      price,
-      checkIn,
-      checkOut,
-      PaymentRef,
-    });
+    const payment = await Payment.processPayment(paymentdata);
 
     console.log("Payment processed successfully:", payment);
 
