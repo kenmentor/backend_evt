@@ -78,7 +78,7 @@ class payment_repo extends crud {
         );
         console.log();
         if (amount === price) {
-          await this.module.create(
+          const payment = await this.module.create(
             [
               {
                 guest,
@@ -109,7 +109,7 @@ class payment_repo extends crud {
                 amount: amount,
                 status: "confirmed",
                 platformFee: amount * 0.05,
-                paymentId: paymentRef,
+                paymentId: payment._id,
                 checkIn,
                 checkOut,
               },
