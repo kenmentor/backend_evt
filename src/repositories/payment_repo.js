@@ -99,7 +99,10 @@ class payment_repo extends crud {
 
             { session }
           );
-
+          console.log(
+            "////////////////////////////////////////////////////////this is payment data ///////////////////////////////////////////////////////////// ",
+            payment
+          );
           await Booking.create(
             [
               {
@@ -109,7 +112,7 @@ class payment_repo extends crud {
                 amount: amount,
                 status: "confirmed",
                 platformFee: amount * 0.05,
-                paymentId: payment._id,
+                paymentId: payment[0]._id,
                 checkIn,
                 checkOut,
               },
