@@ -29,7 +29,7 @@ class payment_repo extends crud {
     price,
     checkIn,
     checkOut,
-    PaymentRef,
+    paymentRef,
   }) {
     console.log(
       {
@@ -40,7 +40,7 @@ class payment_repo extends crud {
         price,
         checkIn,
         checkOut,
-        PaymentRef,
+        paymentRef,
       },
       "controller"
     );
@@ -50,7 +50,7 @@ class payment_repo extends crud {
       await session.withTransaction(async () => {
         // 1️⃣ Prevent duplicate payment references
         const existingPayment = await this.module.findOne(
-          { paymentRef: PaymentRef },
+          { paymentRef: paymentRef },
           null,
           { session }
         );
@@ -59,7 +59,7 @@ class payment_repo extends crud {
         }
 
         // 2️⃣ Verify payment status from Paystack
-        const checkPayment = await check_payment(PaymentRef);
+        const checkPayment = await check_payment(paymentRef);
         if (!checkPayment || checkPayment.status !== "success") {
           throw new Error("Payment verification failed");
         }
@@ -86,7 +86,7 @@ class payment_repo extends crud {
                 amount: paidAmount,
                 status: "success",
                 paymentStatus: "paid",
-                paymentRef: PaymentRef,
+                paymentRef: paymentRef,
               },
             ],
             { session }
@@ -101,7 +101,7 @@ class payment_repo extends crud {
                 amount: paidAmount,
                 status: "confirmed",
                 platformFee: paidAmount * 0.05,
-                paymentId: PaymentRef,
+                paymentId: paymentRef,
                 checkIn,
                 checkOut,
               },
@@ -132,7 +132,7 @@ class payment_repo extends crud {
                 refund: refundAmount,
                 status: "success",
                 paymentStatus: "overpaid",
-                paymentRef: PaymentRef,
+                paymentRef: paymentRef,
                 checkIn,
                 checkOut,
                 price,
@@ -150,7 +150,7 @@ class payment_repo extends crud {
                 amount: paidAmount,
                 status: "confirmed",
                 platformFee: price * 0.05,
-                paymentId: PaymentRef,
+                paymentId: paymentRef,
                 checkIn,
                 checkOut,
 
@@ -166,7 +166,7 @@ class payment_repo extends crud {
             { session }
           );
 
-          await refund(PaymentRef, refundAmount);
+          await refund(paymentRef, refundAmount);
           console.log(`⚠️ Overpayment detected. Refunded ₦${refundAmount}`);
         }
 
@@ -181,7 +181,7 @@ class payment_repo extends crud {
                 amount: paidAmount,
                 status: "failed",
                 paymentStatus: "underpaid",
-                paymentRef: PaymentRef,
+                paymentRef: paymentRef,
                 checkIn,
                 checkOut,
                 price,
@@ -189,7 +189,7 @@ class payment_repo extends crud {
             ],
             { session }
           );
-          await refund(PaymentRef, paidAmount);
+          await refund(paymentRef, paidAmount);
           throw new Error(
             `Underpayment detected: Paid ₦${paidAmount}, expected ₦${price}`
           );
@@ -203,7 +203,7 @@ class payment_repo extends crud {
                 amount: paidAmount,
                 status: "failed",
                 paymentStatus: "underpaid",
-                paymentRef: PaymentRef,
+                paymentRef: paymentRef,
                 checkIn,
                 checkOut,
                 price,
