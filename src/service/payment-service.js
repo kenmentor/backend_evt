@@ -116,7 +116,7 @@ async function Payment_webhook(paymentdata) {
  * Call Paystack Refund API
  */
 async function get_history(id) {
-  const data = await payment.findById(id);
+  const data = await payment.find({ guest: id });
   return data;
 }
 async function refund(reference, amount) {

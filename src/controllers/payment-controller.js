@@ -198,7 +198,7 @@ async function checkPaymentStatus(req, res) {
 async function get_history(req, res) {
   const { id } = req.params;
   const data = await paymentService.get_history(id);
-  res.json({
+  return res.json({
     ...goodResponse,
     data: data,
   });

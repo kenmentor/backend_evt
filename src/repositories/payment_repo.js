@@ -65,12 +65,16 @@ class payment_repo extends crud {
         }
 
         // 3️⃣ Convert amount (kobo → naira)
-        const paidAmount = amount;
-        console.log("💰 Paid:", paidAmount, "| Expected:", price);
+
+        console.log("💰 Paid:", amount, "| Expected:", price);
 
         // 4️⃣ CASE: Exact Payment
-
-        if (paidAmount === price) {
+        console.log(
+          "/////////////////////////////////////////////////////////////////////////////////does it matchMedia",
+          amount === price,
+          "///////////////////////////////////////////////////////////////"
+        );
+        if (amount === price) {
           await this.module.create(
             {
               guest,
@@ -82,7 +86,7 @@ class payment_repo extends crud {
               host,
               guest,
               house,
-              amount: paidAmount,
+              amount: amount,
               status: "success",
               paymentStatus: "paid",
               paymentRef: paymentRef,
@@ -96,9 +100,9 @@ class payment_repo extends crud {
               host,
               guest,
               house,
-              amount: paidAmount,
+              amount: amount,
               status: "confirmed",
-              platformFee: paidAmount * 0.05,
+              platformFee: amount * 0.05,
               paymentId: paymentRef,
               checkIn,
               checkOut,
@@ -117,15 +121,15 @@ class payment_repo extends crud {
         }
 
         // 5️⃣ CASE: Overpayment (refund extra)
-        else if (paidAmount > price) {
-          const refundAmount = paidAmount - price;
+        else if (amount > price) {
+          const refundAmount = amount - price;
 
           await this.module.create(
             {
               host,
               guest,
               house,
-              amount: paidAmount,
+              amount: amount,
               refund: refundAmount,
               status: "success",
               paymentStatus: "overpaid",
@@ -143,7 +147,7 @@ class payment_repo extends crud {
               host,
               guest,
               house,
-              amount: paidAmount,
+              amount: amount,
               status: "confirmed",
               platformFee: price * 0.05,
               paymentId: paymentRef,
@@ -167,13 +171,13 @@ class payment_repo extends crud {
         }
 
         // 6️⃣ CASE: Underpayment (reject)
-        else if (paidAmount < price) {
+        else if (amount < price) {
           await this.module.create(
             {
               host,
               guest,
               house,
-              amount: paidAmount,
+              amount: amount,
               status: "failed",
               paymentStatus: "underpaid",
               paymentRef: paymentRef,
@@ -184,9 +188,9 @@ class payment_repo extends crud {
 
             { session }
           );
-          await refund(paymentRef, paidAmount);
+          await refund(paymentRef, amount);
           throw new Error(
-            `Underpayment detected: Paid ₦${paidAmount}, expected ₦${price}`
+            `Underpayment detected: Paid ₦${amount}, expected ₦${price}`
           );
         } else {
           this.create(
@@ -194,7 +198,7 @@ class payment_repo extends crud {
               host,
               guest,
               house,
-              amount: paidAmount,
+              amount: amount,
               status: "failed",
               paymentStatus: "underpaid",
               paymentRef: paymentRef,
