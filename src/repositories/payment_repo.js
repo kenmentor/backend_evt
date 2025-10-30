@@ -122,12 +122,14 @@ class payment_repo extends crud {
           );
 
           const data = await House.updateOne(
-            { _id: house },
+            { _id: mongoose.Types.ObjectId(house) },
             { available: false },
             { session }
           );
           console.log(data);
           console.log("✅ Payment processed successfully");
+          const verify = await House.findById(house).session(session);
+          console.log("After update (inside transaction):", verify);
         }
 
         // 5️⃣ CASE: Overpayment (refund extra)
@@ -175,7 +177,7 @@ class payment_repo extends crud {
           );
 
           await House.updateOne(
-            { _id: house },
+            { _id: mongoose.Types.ObjectId(house) },
             { available: false },
             { session }
           );
