@@ -121,12 +121,12 @@ class payment_repo extends crud {
             { session }
           );
 
-          await House.updateOne(
+          const data = await House.updateOne(
             { _id: house },
             { available: false },
             { session }
           );
-
+          console.log(data);
           console.log("✅ Payment processed successfully");
         }
 
