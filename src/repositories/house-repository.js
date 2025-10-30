@@ -11,7 +11,7 @@ class house_repo extends crudRepositoryExtra {
 
     try {
       const data = await this.module
-        .findById(id)
+        .findOne({ _id: id, avaliable: true })
         .populate("host", "phoneNumber  _id userName email avatar");
       // populate only phoneNumber, exclude _id
 
