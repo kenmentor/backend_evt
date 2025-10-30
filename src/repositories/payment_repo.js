@@ -31,6 +31,8 @@ class payment_repo extends crud {
     checkOut,
     paymentRef,
   }) {
+    console.log("Booking value type:", typeof Booking);
+    console.log("Booking keys:", Object.keys(Booking || {}));
     console.log(
       {
         guest,
