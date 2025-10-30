@@ -72,40 +72,38 @@ class payment_repo extends crud {
 
         if (paidAmount === price) {
           await this.module.create(
-            [
-              {
-                guest,
+            {
+              guest,
 
-                price,
-                checkIn,
-                checkOut,
+              price,
+              checkIn,
+              checkOut,
 
-                host,
-                guest,
-                house,
-                amount: paidAmount,
-                status: "success",
-                paymentStatus: "paid",
-                paymentRef: paymentRef,
-              },
-            ],
+              host,
+              guest,
+              house,
+              amount: paidAmount,
+              status: "success",
+              paymentStatus: "paid",
+              paymentRef: paymentRef,
+            },
+
             { session }
           );
 
           await Booking.create(
-            [
-              {
-                host,
-                guest,
-                house,
-                amount: paidAmount,
-                status: "confirmed",
-                platformFee: paidAmount * 0.05,
-                paymentId: paymentRef,
-                checkIn,
-                checkOut,
-              },
-            ],
+            {
+              host,
+              guest,
+              house,
+              amount: paidAmount,
+              status: "confirmed",
+              platformFee: paidAmount * 0.05,
+              paymentId: paymentRef,
+              checkIn,
+              checkOut,
+            },
+
             { session }
           );
 
@@ -123,40 +121,38 @@ class payment_repo extends crud {
           const refundAmount = paidAmount - price;
 
           await this.module.create(
-            [
-              {
-                host,
-                guest,
-                house,
-                amount: paidAmount,
-                refund: refundAmount,
-                status: "success",
-                paymentStatus: "overpaid",
-                paymentRef: paymentRef,
-                checkIn,
-                checkOut,
-                price,
-              },
-            ],
+            {
+              host,
+              guest,
+              house,
+              amount: paidAmount,
+              refund: refundAmount,
+              status: "success",
+              paymentStatus: "overpaid",
+              paymentRef: paymentRef,
+              checkIn,
+              checkOut,
+              price,
+            },
+
             { session }
           );
 
           await Booking.create(
-            [
-              {
-                host,
-                guest,
-                house,
-                amount: paidAmount,
-                status: "confirmed",
-                platformFee: price * 0.05,
-                paymentId: paymentRef,
-                checkIn,
-                checkOut,
+            {
+              host,
+              guest,
+              house,
+              amount: paidAmount,
+              status: "confirmed",
+              platformFee: price * 0.05,
+              paymentId: paymentRef,
+              checkIn,
+              checkOut,
 
-                price,
-              },
-            ],
+              price,
+            },
+
             { session }
           );
 
@@ -173,20 +169,19 @@ class payment_repo extends crud {
         // 6️⃣ CASE: Underpayment (reject)
         else if (paidAmount < price) {
           await this.module.create(
-            [
-              {
-                host,
-                guest,
-                house,
-                amount: paidAmount,
-                status: "failed",
-                paymentStatus: "underpaid",
-                paymentRef: paymentRef,
-                checkIn,
-                checkOut,
-                price,
-              },
-            ],
+            {
+              host,
+              guest,
+              house,
+              amount: paidAmount,
+              status: "failed",
+              paymentStatus: "underpaid",
+              paymentRef: paymentRef,
+              checkIn,
+              checkOut,
+              price,
+            },
+
             { session }
           );
           await refund(paymentRef, paidAmount);
@@ -195,20 +190,19 @@ class payment_repo extends crud {
           );
         } else {
           this.create(
-            [
-              {
-                host,
-                guest,
-                house,
-                amount: paidAmount,
-                status: "failed",
-                paymentStatus: "underpaid",
-                paymentRef: paymentRef,
-                checkIn,
-                checkOut,
-                price,
-              },
-            ],
+            {
+              host,
+              guest,
+              house,
+              amount: paidAmount,
+              status: "failed",
+              paymentStatus: "underpaid",
+              paymentRef: paymentRef,
+              checkIn,
+              checkOut,
+              price,
+            },
+
             {
               session,
             }
