@@ -122,7 +122,7 @@ class payment_repo extends crud {
           );
 
           const data = await House.updateOne(
-            { _id: mongoose.Types.ObjectId(house) },
+            { _id: new mongoose.Types.ObjectId(house) },
             { available: false },
             { session }
           );
@@ -177,7 +177,7 @@ class payment_repo extends crud {
           );
 
           await House.updateOne(
-            { _id: mongoose.Types.ObjectId(house) },
+            { _id: new mongoose.Types.ObjectId(house) },
             { available: false },
             { session }
           );
