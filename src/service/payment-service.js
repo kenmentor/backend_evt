@@ -105,6 +105,13 @@ async function Payment_webhook({
 
     // Basic sanity check to avoid mongoose validation errors
     if (!guest || !host || !house || !amount || !PaymentRef) {
+      console.log("this what we get when we send in ", {
+        guest,
+        host,
+        house,
+        amount,
+        PaymentRef,
+      });
       throw new Error(
         "Missing required payment fields",
         guest,

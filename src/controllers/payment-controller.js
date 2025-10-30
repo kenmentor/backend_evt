@@ -42,7 +42,12 @@ async function Payment_webhook(req, res) {
             amount: rawAmount,
             status: paystackStatus,
           } = event.data;
-          console.log(event);
+          console.log(
+            "//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////",
+            event,
+            "////////////////////////////////////////////////////////////////////",
+            event.data
+          );
           const {
             email,
             guest,
