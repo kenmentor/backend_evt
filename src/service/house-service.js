@@ -106,25 +106,11 @@ async function upload_house(files, body) {
   body.thumbnail = thumbnailUrl;
   body.video = video;
   body.images = images;
-  body.electricity = Number(body.electricity);
+
   body.price = Number(body.price);
-  body.electricity = Number(body.electricity);
+
   body.bedroom = Number(body.bedroom);
   body.bathroom = Number(body.bathroom);
-  body.area = Number(body.area);
-  body.floor = Number(body.floor);
-  body.totalFloors = Number(body.totalFloors);
-  body.age = Number(body.age[0]);
-  body.waterSuply = Boolean(body.waterSuply);
-
-  console.log(
-    body.bedroom,
-    body.bathrooms,
-    body.area,
-    body.floor,
-    body.totalFloors,
-    body.age
-  );
 
   // body.host = Object(body.host);
   console.log("Final body to be saved:", body);
