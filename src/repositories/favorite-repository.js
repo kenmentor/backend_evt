@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Favorite = require("../modules/favorite");
 const House = require("../modules/resource");
 
@@ -21,11 +22,29 @@ class FavoriteRepository {
   }
 
   async findByUserAndHouse(userId, houseId) {
-    return await Favorite.findOne({ userId, houseId });
+    let houseObjectId = houseId;
+    if (!mongoose.Types.ObjectId.isValid(houseId)) {
+      const house = await House.findOne({ _id: houseId });
+      if (house) {
+        houseObjectId = house._id;
+      } else {
+        return null;
+      }
+    }
+    return await Favorite.findOne({ userId, houseId: houseObjectId });
   }
 
   async delete(userId, houseId) {
-    return await Favorite.findOneAndDelete({ userId, houseId });
+    let houseObjectId = houseId;
+    if (!mongoose.Types.ObjectId.isValid(houseId)) {
+      const house = await House.findOne({ _id: houseId });
+      if (house) {
+        houseObjectId = house._id;
+      } else {
+        return null;
+      }
+    }
+    return await Favorite.findOneAndDelete({ userId, houseId: houseObjectId });
   }
 
   async deleteById(id) {
@@ -33,7 +52,16 @@ class FavoriteRepository {
   }
 
   async isFavorite(userId, houseId) {
-    const favorite = await Favorite.findOne({ userId, houseId });
+    let houseObjectId = houseId;
+    if (!mongoose.Types.ObjectId.isValid(houseId)) {
+      const house = await House.findOne({ _id: houseId });
+      if (house) {
+        houseObjectId = house._id;
+      } else {
+        return false;
+      }
+    }
+    const favorite = await Favorite.findOne({ userId, houseId: houseObjectId });
     return !!favorite;
   }
 }

@@ -1,19 +1,24 @@
 const favoriteRepository = require("../repositories/favorite-repository");
-const houseRepository = require("../repositories/house-repository");
+const Analytics = require("../modules/analytics");
 
 class FavoriteService {
   async addFavorite(userId, houseId) {
-    const house = await houseRepository.findById(houseId);
-    if (!house) {
-      throw new Error("Property not found");
-    }
-
     const existing = await favoriteRepository.findByUserAndHouse(userId, houseId);
     if (existing) {
       throw new Error("Property already in favorites");
     }
 
     const favorite = await favoriteRepository.create({ userId, houseId });
+
+    await Analytics.create({
+      type: "property_interaction",
+      action: "like",
+      userId,
+      metadata: { propertyId: houseId },
+      sessionId: null,
+      timestamp: new Date(),
+    }).catch(() => {});
+
     return favorite;
   }
 
@@ -23,7 +28,18 @@ class FavoriteService {
       throw new Error("Favorite not found");
     }
 
-    return await favoriteRepository.delete(userId, houseId);
+    await favoriteRepository.delete(userId, houseId);
+
+    await Analytics.create({
+      type: "property_interaction",
+      action: "unlike",
+      userId,
+      metadata: { propertyId: houseId },
+      sessionId: null,
+      timestamp: new Date(),
+    }).catch(() => {});
+
+    return;
   }
 
   async getUserFavorites(userId) {

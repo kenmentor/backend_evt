@@ -112,6 +112,105 @@ async function getConversionFunnel(req, res) {
   }
 }
 
+async function getEngagementMetrics(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getEngagementMetrics(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getDeviceAnalytics(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getDeviceAnalytics(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getTrafficSources(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getTrafficSources(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getSearchAnalytics(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getSearchAnalytics(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getPropertyAnalyticsDetailed(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getPropertyAnalyticsDetailed(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getTimeOnPageAnalytics(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getTimeOnPageAnalytics(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getSessionAnalytics(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getSessionAnalytics(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getRetentionAnalytics(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getRetentionAnalytics(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getRealTimeAnalytics(req, res) {
+  try {
+    const data = await analytics_service.getRealTimeAnalytics();
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getUserBehaviorMetrics(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getUserBehaviorMetrics(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
 module.exports = {
   trackEvent,
   trackBatchEvents,
@@ -124,4 +223,14 @@ module.exports = {
   getPropertyAnalytics,
   getUserEngagement,
   getConversionFunnel,
+  getEngagementMetrics,
+  getDeviceAnalytics,
+  getTrafficSources,
+  getSearchAnalytics,
+  getPropertyAnalyticsDetailed,
+  getTimeOnPageAnalytics,
+  getSessionAnalytics,
+  getRetentionAnalytics,
+  getRealTimeAnalytics,
+  getUserBehaviorMetrics,
 };
