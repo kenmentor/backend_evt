@@ -34,35 +34,30 @@ async function update_house_view(id) {
   }
 }
 
-// const cloudinary = require("cloudinary").v2;
-
-// const resourceDB = require("../models/resource");
-// const connectDB = require("../config/db");
-
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-console.log(
-  {
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET ? "***" : null,
-  } // Hide secret in log
-);
-async function upload_house(files, body) {
+
+async function upload_house(files, body, userId) {
   await connectDB();
-  console.log("UPLOAD SERVICE ");
-  console.log(files);
-  console.log(body);
+  console.log("=== UPLOAD HOUSE SERVICE ===");
+  console.log("User ID from middleware:", userId);
+  console.log("Files:", files);
+  console.log("Body:", body);
+
+  if (!userId) {
+    throw new Error("User not authenticated");
+  }
+
   const uploadBufferToCloudinary = (fileBuffer, folder = "default") => {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
           folder,
           resource_type: "auto",
-          timeout: 600000, // 10 minutes
+          timeout: 600000,
         },
         (error, result) => {
           if (result) resolve(result);
@@ -81,6 +76,7 @@ async function upload_house(files, body) {
     );
     thumbnailUrl = result.secure_url;
   }
+  
   let video = "";
   if (files.video?.length > 0) {
     const result = await uploadBufferToCloudinary(
@@ -103,20 +99,26 @@ async function upload_house(files, body) {
   }
 
   console.log("Uploaded URLs:", { thumbnailUrl, video, images });
-  body.thumbnail = thumbnailUrl;
-  body.video = video;
-  body.images = images;
 
-  body.price = Number(body.price);
+  const houseData = {
+    ...body,
+    thumbnail: thumbnailUrl,
+    video: video,
+    images: images,
+    price: Number(body.price),
+    bedroom: Number(body.bedroom),
+    bathroom: Number(body.bathroom),
+    host: userId,
+  };
 
-  body.bedroom = Number(body.bedroom);
-  body.bathroom = Number(body.bathroom);
+  if (!houseData.thumbnail && images.length > 0) {
+    houseData.thumbnail = images[0].url;
+  }
 
-  // body.host = Object(body.host);
-  console.log("Final body to be saved:", body);
-  const data = await newcrudRepositoryExtra.create(body);
+  console.log("Final house data to be saved:", houseData);
+  
+  const data = await newcrudRepositoryExtra.create(houseData);
   console.log("Saved data:", data);
-  await data.save();
   return data;
 }
 

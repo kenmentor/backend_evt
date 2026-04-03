@@ -8,4 +8,7 @@ const demand = (module.exports = {
   auth_controller: require("./auth-controller"),
   payment_control: require("./payment-controller"),
   demand_controller: require("./demand-controller"),
+  tour_controller: require("./tour-controller"),
+  favorite_controller: require("./favorite-controller"),
+  payout_controller: require("./payout-controller"),
 });

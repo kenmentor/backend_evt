@@ -5,7 +5,7 @@ function populatehouse(query) {
   return query.populate({
     path: "host",
     select:
-      "userName phoneNumber email adminVerified rank verificationCompleted profileImage",
+      "userName phoneNumber email adminVerified rank verificationCompleted profileImage role",
   });
 }
 const get_house_detail = async (req, res) => {
@@ -95,11 +95,20 @@ async function update_house_view(req, res) {
 
 async function upload_house(req, res) {
   try {
-    const { files, body } = req;
+    const { files, body, user } = req;
 
-    console.log(body, "fjbbjbjbjjb");
+    console.log("Upload house controller - user:", user);
+    console.log("Body received:", body);
 
-    const data = await house_service.upload_house(files, body);
+    const userId = user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        status: false,
+        message: "Authentication required",
+      });
+    }
+
+    const data = await house_service.upload_house(files, body, userId);
 
     res.status(200).json({
       status: true,
@@ -110,7 +119,7 @@ async function upload_house(req, res) {
     console.error("Upload failed:", error);
     res.status(500).json({
       status: false,
-      message: "Internal server error",
+      message: error.message || "Internal server error",
     });
   }
 }

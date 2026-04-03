@@ -37,133 +37,150 @@ class house_repo extends crudRepositoryExtra {
       throw err;
     }
   }
-  async filter(filter) {
-    console.log("hellllo", filter.hostId);
-
+  
+  async searchProperties(filter) {
+    console.log("Search filter:", filter);
+    
     try {
-      let query = {
-        avaliable: true,
-      };
-
-      // 🔎 Step 1: Text-based filters
-      const textFilters = [
-        "location",
-        "type",
-        "category",
-        "state",
-        "lga",
-        "landmark",
-      ];
-      let searchTerms = [];
-
-      textFilters.forEach((field) => {
-        if (filter[field] && filter[field] !== "undefined") {
-          searchTerms.push(filter[field]);
-        }
-      });
-
-      if (searchTerms.length > 0) {
-        // Try text index first
-        query.$text = { $search: searchTerms.join(" ") };
+      const limit = Number(filter.limit) || 50;
+      const page = Number(filter.bardge) || 1;
+      const skip = (page - 1) * limit;
+      
+      let query = { avaliable: true };
+      let sortOption = { createdAt: -1 };
+      let projection = {};
+      
+      const searchWord = filter.searchWord?.trim();
+      const hasSearchWord = searchWord && searchWord !== "undefined" && searchWord.length > 0;
+      
+      // Build query based on filters
+      if (filter.hostId && filter.hostId !== "undefined") {
+        query.host = filter.hostId;
       }
-
-      // ❌ Exclude house ID if provided
+      
       if (filter.id && filter.id !== "undefined") {
         query._id = { $ne: mongoose.Types.ObjectId(filter.id) };
       }
-      if (filter.hostId) {
-        query.host = filter.hostId;
-      }
-
-      // 💰 Price filter with adaptive tolerance
+      
+      // Price filter
       let min = Number(filter.min);
       let max = Number(filter.max);
-
       if (!isNaN(min) || !isNaN(max)) {
         query.price = {};
         if (!isNaN(min)) query.price.$gte = min;
         if (!isNaN(max)) query.price.$lte = max;
       }
-
-      // 🛠 Amenities (use partial match instead of strict $all)
+      
+      // Exact filters
+      if (filter.type && filter.type !== "undefined" && filter.type !== "all") {
+        query.type = filter.type;
+      }
+      if (filter.category && filter.category !== "undefined" && filter.category !== "all") {
+        query.category = filter.category;
+      }
+      if (filter.state && filter.state !== "undefined" && filter.state !== "all") {
+        query.state = filter.state;
+      }
+      if (filter.lga && filter.lga !== "undefined" && filter.lga !== "all") {
+        query.lga = filter.lga;
+      }
+      if (filter.landmark && filter.landmark !== "undefined") {
+        query.landmark = filter.landmark;
+      }
+      
+      // Amenities filter
       if (filter.amenities && filter.amenities !== "undefined") {
         const amenitiesArray = filter.amenities.split(",").map((a) => a.trim());
-        query.amenities = { $in: amenitiesArray }; // ✅ looser than $all
+        query.amenities = { $in: amenitiesArray };
       }
-
-      // 📄 Pagination
-      const limit = Number(filter.limit) || 50;
-      const page = Number(filter.bardge) || 1;
-      const skip = (page - 1) * limit;
-
-      // ⚖️ Sorting
-      const sort = query.$text
-        ? { score: { $meta: "textScore" }, createdAt: -1 }
-        : { createdAt: -1 };
-
-      const projection = query.$text ? { score: { $meta: "textScore" } } : {};
-
-      // 🚀 Primary Query
+      
+      // 🔍 Search with text index (weighted)
+      if (hasSearchWord) {
+        query.$text = { $search: searchWord };
+        sortOption = { score: { $meta: "textScore" }, createdAt: -1 };
+        projection = { score: { $meta: "textScore" } };
+      }
+      
+      // First attempt with text search
       let results = await this.module
         .find(query, projection)
         .limit(limit)
         .skip(skip)
-        .sort(sort);
-      if (results.length !== 0) {
+        .sort(sortOption);
+      
+      if (results.length > 0) {
+        console.log("✅ Text search results:", results.length);
         return results;
       }
-
-      // 🟡 Step 2: Expand price tolerance if no results
-      if (results.length === 0 && (!isNaN(min) || !isNaN(max))) {
-        query.price = {};
-        if (!isNaN(min)) query.price.$gte = Math.max(0, min - 100000); // widen tolerance
-        if (!isNaN(max)) query.price.$lte = max + 100000;
-
-        results = await this.module
-          .find(query)
-          .limit(limit)
-          .skip(skip)
-          .sort(sort);
-        if (results.length !== 0) {
-          return results;
-        }
-      }
-
-      // 🔵 Step 3: Loose regex fallback if still nothing
-      if (results.length === 0 && searchTerms.length > 0) {
-        const looseQuery = {
-          $or: textFilters.map((field) => ({
-            [field]: { $regex: new RegExp(searchTerms.join("|"), "i") },
-          })),
+      
+      // Second attempt: Fuzzy regex search with word boundaries
+      if (hasSearchWord) {
+        const fuzzyRegex = new RegExp(searchWord.split(" ").filter(w => w.length > 1).join("|"), "i");
+        const fuzzyQuery = {
+          ...query,
+          $or: [
+            { title: fuzzyRegex },
+            { address: fuzzyRegex },
+            { location: fuzzyRegex },
+            { description: fuzzyRegex },
+          ]
         };
-
+        delete fuzzyQuery.$text;
+        
         results = await this.module
-          .find(looseQuery)
+          .find(fuzzyQuery)
           .limit(limit)
           .skip(skip)
           .sort({ createdAt: -1 });
-        if (results.length !== 0) {
+        
+        if (results.length > 0) {
+          console.log("✅ Fuzzy search results:", results.length);
           return results;
         }
       }
-
-      // 🔴 Step 4: Absolute fallback → return latest houses
-      // if (results.length === 0) {
-      //   results = await this.module
-      //     .find({})
-      //     .limit(limit)
-      //     .skip(skip)
-      //     .sort({ createdAt: -1 });
-      // }
-
-      console.log("✅ Final Results:", results.length);
+      
+      // Third attempt: Partial match with relaxed price
+      if (!isNaN(min) || !isNaN(max)) {
+        const relaxedPriceQuery = { ...query };
+        delete relaxedPriceQuery.$text;
+        relaxedPriceQuery.price = {};
+        if (!isNaN(min)) relaxedPriceQuery.price.$gte = Math.max(0, min - 200000);
+        if (!isNaN(max)) relaxedPriceQuery.price.$lte = max + 200000;
+        
+        results = await this.module
+          .find(relaxedPriceQuery)
+          .limit(limit)
+          .skip(skip)
+          .sort({ createdAt: -1 });
+        
+        if (results.length > 0) {
+          console.log("✅ Relaxed price search results:", results.length);
+          return results;
+        }
+      }
+      
+      // Fourth attempt: Just filters without text search
+      delete query.$text;
+      results = await this.module
+        .find(query)
+        .limit(limit)
+        .skip(skip)
+        .sort({ createdAt: -1 });
+      
+      console.log("✅ Filter-only search results:", results.length);
       return results;
+      
     } catch (error) {
-      console.error("❌ Error filtering data:", error);
+      console.error("❌ Error in searchProperties:", error);
       throw error;
     }
   }
 
+  // Keep original filter method for backward compatibility
+  async filter(filter) {
+    return this.searchProperties(filter);
+  }
+  
   async losefilter(filter) {
     function queryBuilder(filter) {
       let query = {

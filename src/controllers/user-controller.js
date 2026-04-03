@@ -97,23 +97,21 @@ function logout_user(req, res) {
 }
 async function login_user(req, res) {
   const { email, password } = req.body;
-  const api_key = process.env.JWT_API_KEY;
 
-  console.log("Process started:", email, password);
+  console.log("Login controller - email:", email);
+  console.log("Login controller - password:", password ? "provided" : "missing");
 
   try {
-    const data = await verification_service.login_user(
-      password,
-      email,
-      api_key
-    );
+    const data = await verification_service.login_user(password, email);
+
+    console.log("Login result:", data ? "success" : "failed/null");
 
     if (!data) {
       const resp = {
         ...response.badResponse,
-        message: "User not found or not verified",
+        message: "Invalid email or password",
       };
-      return res.status(resp.status).json(resp);
+      return res.status(401).json(resp);
     }
 
     // Generate JWT token and set cookie
@@ -126,8 +124,9 @@ async function login_user(req, res) {
     };
     return res.status(resp.status).json(resp);
   } catch (err) {
+    console.error("Login controller error:", err);
     const resp = { ...response.badResponse, message: err.message, error: err };
-    return res.status(resp.status || 500).json(resp);
+    return res.status(500).json(resp);
   }
 }
 
@@ -135,8 +134,16 @@ async function forgot_password(req, res) {
   const { email } = req.body;
   const { goodResponse, badResponse } = response;
   try {
-    const data = await user_service.forgot_password(email);
-    return res.json((goodResponse.data = data));
+    const result = await user_service.forgot_password(email);
+    
+    if (!result.success && result.message === "User not found") {
+      badResponse.message = "No account found with this email address";
+      return res.status(404).json(badResponse);
+    }
+    
+    goodResponse.message = result.message;
+    goodResponse.data = { email };
+    return res.json(goodResponse);
   } catch (error) {
     console.error("Error fetching data from DB:", error);
     badResponse.message = error.message;
@@ -254,21 +261,36 @@ async function reset_password(req, res) {
   const { badResponse, goodResponse } = response;
   const { token } = req.params;
   const { password } = req.body;
+  
+  console.log("Reset password controller - token:", token);
+  console.log("Reset password controller - password length:", password ? password.length : 0);
+  
+  if (!password || password.length < 6) {
+    badResponse.message = "Password must be at least 6 characters";
+    return res.status(400).json(badResponse);
+  }
+  
   try {
-    const data = await user_service.reset_password({
+    console.log("Calling user_service.reset_password...");
+    const result = await user_service.reset_password({
       token: token,
       password: password,
     });
-    if (!data) {
-      const resp = badResponse;
-      return res.json((resp.message = "no such user found "));
+    
+    console.log("Reset password result:", JSON.stringify(result));
+    
+    if (!result.success) {
+      badResponse.message = result.message;
+      return res.status(400).json(badResponse);
     }
-    goodResponse.data = data;
-    goodResponse.message = "password succesfully change ";
+    
+    goodResponse.data = { email: result.user.email };
+    goodResponse.message = result.message;
     return res.json(goodResponse);
   } catch (error) {
-    console.log(error);
-    return res.json((badResponse.message = error.message));
+    console.error("Reset password controller error:", error);
+    badResponse.message = error.message;
+    return res.status(500).json(badResponse);
   }
 }
 

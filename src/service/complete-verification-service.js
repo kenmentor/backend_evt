@@ -65,39 +65,42 @@ async function verify_email(code) {
 
 async function login_user(password, email) {
   try {
-    console.log("process have  started before bcryt  ");
-    const hashedPassword = await bcrypt.hash(password, saltround);
-
-    console.log("process have  after bcryt  ");
+    console.log("=== LOGIN SERVICE ===");
+    console.log("Email:", email);
+    console.log("Password provided:", password ? "yes" : "no");
+    
     const user = await verificationRepo.findOne({
       email: email,
       verifiedEmail: true,
     });
-    if (user) {
-      console.log(user, "11");
+    
+    if (!user) {
+      console.log("ERROR: User not found or not verified");
+      return null;
+    }
+    
+    console.log("User found:", user.email);
+    console.log("User verifiedEmail:", user.verifiedEmail);
+    console.log("Stored password hash exists:", user.password ? "yes" : "NO - THIS IS THE PROBLEM!");
+    
+    if (!user.password) {
+      console.log("ERROR: User has no password stored!");
+      return null;
+    }
+    
+    console.log("Comparing passwords...");
+    const isvalidpassword = await bcrypt.compare(password, user.password);
+    console.log("Password comparison result:", isvalidpassword ? "MATCH" : "NO MATCH");
 
-      const isvalidpassword = await bcrypt.compare(password, user.password);
-      console.log(isvalidpassword);
-
-      if ((user & isvalidpassword, isvalidpassword)) {
-        const jwtToken = jwt.sign(
-          {
-            email: email,
-            Password: hashedPassword,
-          },
-          jwt_api_key,
-          { expiresIn: "30d" }
-        );
-
-        console.log("coming from the login", jwtToken);
-        return user;
-      }
+    if (!isvalidpassword) {
+      console.log("ERROR: Password does not match");
+      return null;
     }
 
-    return null;
+    console.log("=== LOGIN SUCCESSFUL ===");
+    return user;
   } catch (err) {
-    console.log("error logining -service");
-    console.log(err);
+    console.error("Error during login:", err);
     throw err;
   }
 }
