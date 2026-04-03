@@ -22,7 +22,7 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
 app.use("/", route);
@@ -51,7 +51,19 @@ app.use((err, req, res, next) => {
   console.error("Global error handler:", err);
   const status = err.status || 500;
   const message = err.message || "Internal server error";
-  res.status(status).json(badResponse(message, status, err));
+  try {
+    res.status(status).json(badResponse(message, status, err));
+  } catch (e) {
+    res.status(500).json({ data: [], error: {}, status: 500, message: "Internal server error", ok: false });
+  }
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
 });
 
 const PORT = process.env.PORT || 5036;

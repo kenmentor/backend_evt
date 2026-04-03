@@ -52,10 +52,76 @@ async function getUserJourney(req, res) {
   }
 }
 
+async function getPageVisits(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getPageVisits(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getUserRegistrationStats(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getUserRegistrationStats(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getPageTimeline(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getPageTimeline(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getPropertyAnalytics(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getPropertyAnalytics(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getUserEngagement(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getUserEngagement(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
+async function getConversionFunnel(req, res) {
+  try {
+    const { days } = req.query;
+    const data = await analytics_service.getConversionFunnel(parseInt(days) || 30);
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
+
 module.exports = {
   trackEvent,
   trackBatchEvents,
   getOverview,
   getTopProperties,
   getUserJourney,
+  getPageVisits,
+  getUserRegistrationStats,
+  getPageTimeline,
+  getPropertyAnalytics,
+  getUserEngagement,
+  getConversionFunnel,
 };

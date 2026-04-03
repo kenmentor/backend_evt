@@ -15,6 +15,7 @@ const chat_route = require("./chat-route");
 const tour_route = require("./tour-route");
 const favorite_route = require("./favorite-route");
 const payout_route = require("./payout-route");
+const analytics_route = require("./analytics-route");
 
 router.use("/house", house_route);
 router.use("/auth", auth_route);
@@ -29,5 +30,6 @@ router.use("/chat", chat_route);
 router.use("/tour", tour_route);
 router.use("/favorites", favorite_route);
 router.use("/payout", payout_route);
+router.use("/analytics", analytics_route);
 
 module.exports = router;

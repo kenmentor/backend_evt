@@ -8,4 +8,5 @@ module.exports = {
   verification_service: require("./complete-verification-service"),
   paymentService: require("./payment-service"),
   demand_service: require("./demand-service"),
+  analytics_service: require("./analytics-service"),
 };

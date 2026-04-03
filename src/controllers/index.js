@@ -11,4 +11,5 @@ const demand = (module.exports = {
   tour_controller: require("./tour-controller"),
   favorite_controller: require("./favorite-controller"),
   payout_controller: require("./payout-controller"),
+  analytics_controller: require("./analytics-controller"),
 });
