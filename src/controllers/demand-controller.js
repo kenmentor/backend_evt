@@ -1,107 +1,72 @@
 const { demand_service } = require("../service/");
 const { response } = require("../utility");
+const { goodResponse, badResponse } = response;
 
 const get_demand_detail = async (req, res) => {
-  console.log("commmmmmmmmm");
   try {
     const { id } = req.params;
     if (!id) {
-      const responseData = response.badResponse;
-      responseData.message = "ID required";
-      return res.json(responseData).status(200);
+      return res.status(400).json(badResponse("ID is required", 400));
     }
-    console.log(id, "this id jbfyfyuf by");
-    const data = await demand_service.get_details(id); // ✅ Pass correct ID
-    const responseData = response.goodResponse;
-    responseData.data = data;
-    res.json(responseData).status(200);
+    const data = await demand_service.get_details(id);
+    return res.json(goodResponse(data));
   } catch (error) {
-    console.error("Error fetching resource:", error);
-    res.status(500).json({ error: "Failed to fetch resource" }); // ✅ Send error response
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 async function get_demand(req, res) {
-  console.log("Incoming query params:", req.query);
-
-  // Destructure based on keyword interface (include new fields)
   const { min, max, searchWord, lga, state, amenities, category } = req.query;
 
   try {
     const data = await demand_service.find_demand({
       min: min ? parseInt(min) : undefined,
       max: max ? parseInt(max) : undefined,
-      location: decodeURIComponent(searchWord || ""), // matches frontend
-
+      location: decodeURIComponent(searchWord || ""),
       lga,
       state,
-      amenities: amenities ? amenities.split(",") : undefined, // ✅ handle multiple
+      amenities: amenities ? amenities.split(",") : undefined,
       category,
     });
 
-    const responseData = response.goodResponse;
-    responseData.data = data;
-    return res.status(200).json(responseData);
+    return res.json(goodResponse(data));
   } catch (error) {
-    const responseData = response.badResponse;
-    console.error("Error fetching data from DB:", error);
-    res.status(500).json(responseData);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 
 async function update_demand_view(req, res) {
-  const id = await req.body.id;
+  const id = req.body.id;
   try {
     const data = await demand_service.update_demand_view(id);
-    const responseData = response.goodResponse;
-    responseData.data = data;
-    res.json(responseData);
-  } catch (erro) {
-    const responseData = response.badResponse;
-    res.json(responseData);
-    console.log("erro happen while updating view ");
-    throw erro;
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 
 async function upload_demand(req, res) {
   try {
     const { body } = req;
-
     const data = await demand_service.upload_demand(body);
-
-    res.status(200).json({
-      status: true,
-      message: "House uploaded successfully",
-      data,
-    });
+    return res.json(goodResponse(data, "Demand uploaded successfully"));
   } catch (error) {
-    console.error("Upload failed:", error);
-    res.status(500).json({
-      status: false,
-      message: "Internal server error",
-    });
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 
 async function update_demand(req, res) {
   try {
     const { files, body } = req;
-    console.log("files", files);
-    console.log("body", body);
     const data = demand_service.update_demand({ files, body });
-    const responseData = response.goodResponse;
-    res.json(responseData);
-  } catch (err) {
-    throw err;
+    return res.json(goodResponse(data, "Demand updated successfully"));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 async function delete_demand(req, res) {
-  console.log("commmmmmmmmm");
-  const id = await req.body.id;
+  const id = req.body.id;
   const data = await user_service.delete();
-  const responseData = response.goodResponse;
-  responseData.data = data;
-  res.json(responseData);
+  return res.json(goodResponse(data));
 }
 
 module.exports = {

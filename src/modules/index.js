@@ -10,4 +10,5 @@ module.exports = {
   demandDB: require("./demand"),
   paymentDB: require("./payment"),
   chatDB: chat,
+  Analytics: require("./analytics"),
 };

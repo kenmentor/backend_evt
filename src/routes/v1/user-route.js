@@ -7,9 +7,15 @@ const { profile_multer } = require("../../middle-ware");
 // Update user (with optional profile image)
 router.put(
   "/:id",
-  profile_multer.single("profileImage"), // multer handles file
-  // user_middleware.user_update,
+  profile_multer.single("profileImage"),
   user_controller.edit_user_detail
+);
+
+// Upload profile picture only
+router.post(
+  "/uploadProfile/:id",
+  profile_multer.single("profileImage"),
+  user_controller.upload_profile_picture
 );
 
 router.get("/pioneer", user_controller.pioneer);

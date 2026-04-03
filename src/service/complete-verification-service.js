@@ -43,12 +43,29 @@ async function verif_NIN(NIN, userId) {
 async function verify_email(code) {
   console.log(code);
   try {
-    const user = await verificationRepo.findOne({
+    // First try to find by token
+    let user = await verificationRepo.findOne({
       verifyToken: code,
       verificationTokenExpireAt: { $gt: Date.now() },
     });
+
+    // If not found by token, check if already verified with any code
+    if (!user) {
+      user = await verificationRepo.findOne({
+        verifiedEmail: true,
+      });
+      if (user) {
+        return { ...user._doc, alreadyVerified: true };
+      }
+    }
+
     console.log(user);
     if (user) {
+      // If already verified, return success
+      if (user.verifiedEmail) {
+        return { ...user._doc, alreadyVerified: true };
+      }
+      
       user.verifiedEmail = true;
       user.verifyToken = undefined;
       user.verificationTokenExpireAt = undefined;
@@ -69,6 +86,20 @@ async function login_user(password, email) {
     console.log("Email:", email);
     console.log("Password provided:", password ? "yes" : "no");
     
+    // First check if user exists at all
+    const userExists = await verificationRepo.findOne({ email: email });
+    
+    if (!userExists) {
+      console.log("ERROR: User not found");
+      throw new Error("Invalid email or password");
+    }
+    
+    // Check if email is verified
+    if (!userExists.verifiedEmail) {
+      console.log("ERROR: User email not verified");
+      throw new Error("Please verify your email before logging in. Check your email for the verification code.");
+    }
+    
     const user = await verificationRepo.findOne({
       email: email,
       verifiedEmail: true,
@@ -76,7 +107,7 @@ async function login_user(password, email) {
     
     if (!user) {
       console.log("ERROR: User not found or not verified");
-      return null;
+      throw new Error("Invalid email or password");
     }
     
     console.log("User found:", user.email);
@@ -85,7 +116,7 @@ async function login_user(password, email) {
     
     if (!user.password) {
       console.log("ERROR: User has no password stored!");
-      return null;
+      throw new Error("Invalid email or password");
     }
     
     console.log("Comparing passwords...");
@@ -94,7 +125,7 @@ async function login_user(password, email) {
 
     if (!isvalidpassword) {
       console.log("ERROR: Password does not match");
-      return null;
+      throw new Error("Invalid email or password");
     }
 
     console.log("=== LOGIN SUCCESSFUL ===");
@@ -124,9 +155,36 @@ async function signup_user(dataObject, res) {
   }
 }
 
+async function resend_verification(email) {
+  try {
+    const user = await verificationRepo.findOne({ email: email });
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    if (user.verifiedEmail) {
+      throw new Error("Email already verified");
+    }
+    
+    const newVerifyToken = await generateVerificationCode();
+    user.verifyToken = newVerifyToken;
+    user.verificationTokenExpireAt = Date.now() + 24 * 60 * 60 * 1000;
+    await user.save();
+    
+    await sendVerificationEmail(user.email, user.userName, newVerifyToken);
+    
+    return { message: "Verification code resent successfully" };
+  } catch (error) {
+    console.error("Error resending verification:", error);
+    throw error;
+  }
+}
+
 module.exports = {
   verif_NIN: verif_NIN,
   verify_email: verify_email,
   signup_user: signup_user,
   login_user: login_user,
+  resend_verification: resend_verification,
 };

@@ -1,9 +1,8 @@
 const { requst_service } = require("../service");
-
 const { response } = require("../utility");
+const { goodResponse, badResponse } = response;
 
 const create_request = async (req, res) => {
-  const Response = response;
   const body = req.body;
   try {
     const already = await requst_service.alreadyExit({
@@ -11,7 +10,6 @@ const create_request = async (req, res) => {
       guest: body.guestId,
       house: body.houseId,
     });
-    console.log(already, "hello");
     const bookingSelf = body.hostId === body.guestId;
     if (!already && bookingSelf) {
       const data = await requst_service.create_request({
@@ -19,78 +17,55 @@ const create_request = async (req, res) => {
         guestId: body.guestId,
         houseId: body.houseId,
       });
-      Response.goodResponse.data = data;
-      Response.goodResponse.message = "usesfully created request ";
-      console.log("passed");
-      return res.json(Response.goodResponse);
+      return res.json(goodResponse(data, "Request created successfully"));
     }
     if (already) {
-      Response.badResponse.message = "you have already sent a request ";
-      Response.badResponse.status = 401;
-      return res.status(401).json(Response.badResponse);
+      return res.status(401).json(badResponse("You have already sent a request", 401));
     }
-    Response.badResponse.message = "you cant book you house  ";
-    Response.badResponse.status = 401;
-    return res.status(401).json(Response.badResponse);
+    return res.status(401).json(badResponse("You can't book your own house", 401));
   } catch (error) {
-    return res.json(Response.badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 const delete_request = async (req, res) => {
-  const request_id = await req.params.requestId;
-  const Response = response;
+  const request_id = req.params.requestId;
   try {
-    data = await requst_service.delete_request(request_id);
-    Response.goodResponse.data = data;
-    Response.goodResponse.message = "usesfully created request ";
-    return res.json(Response.goodResponse);
+    const data = await requst_service.delete_request(request_id);
+    return res.json(goodResponse(data, "Request deleted successfully"));
   } catch (error) {
-    return res.json(Response.badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 const update_request = async (req, res) => {
-  const Response = response;
   const { requestId } = req.params;
   const { status } = req.query;
   try {
-    console.log({ accepted: status === "1", req: req.query.status });
     const data = await requst_service.update_request(requestId, {
       accepted: status === "1",
     });
-    const responseObj = (Response.goodResponse.data = data);
-    Response.goodResponse.message = "usesfully created request ";
-    return res.json(Response.goodResponse);
+    return res.json(goodResponse(data, "Request updated successfully"));
   } catch (error) {
-    return res.json(Response.badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 const get_request_details = async (req, res) => {
-  const Response = response;
-  const requestId = await req.params.id;
+  const requestId = req.params.id;
   try {
     const data = await requst_service.get_request_details(requestId);
-    Response.goodResponse.data = data;
-    Response.goodResponse.message = "usesfully created request ";
-    return res.json(Response.goodResponse);
+    return res.json(goodResponse(data));
   } catch (error) {
-    return res.json(Response.badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 
 const get_all_request = async (req, res) => {
-  const Response = response;
-
-  const userId = await req.params.userId;
-  const role = await req.query.role;
-  console.log(userId, role);
+  const userId = req.params.userId;
+  const role = req.query.role;
   try {
     const data = await requst_service.get_all_request(userId, role);
-
-    Response.goodResponse.message = "usesfully retrived request list  ";
-    Response.goodResponse.data = data;
-    return res.json(Response.goodResponse);
+    return res.json(goodResponse(data, "Request list retrieved successfully"));
   } catch (error) {
-    return res.json(Response.badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 

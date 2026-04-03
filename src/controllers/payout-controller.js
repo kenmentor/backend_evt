@@ -1,121 +1,85 @@
 const payoutService = require("../service/payout-service");
 const { response } = require("../utility");
+const { goodResponse, badResponse } = response;
 
 const createPayout = async (req, res) => {
-  const Response = response;
   try {
     const payout = await payoutService.createPayout(req.body);
-    Response.goodResponse.data = payout;
-    Response.goodResponse.message = "Payout created successfully";
-    return res.status(201).json(Response.goodResponse);
+    return res.status(201).json(goodResponse(payout, "Payout created successfully"));
   } catch (error) {
-    Response.badResponse.message = error.message || "Failed to create payout";
-    Response.badResponse.status = 400;
-    return res.status(400).json(Response.badResponse);
+    return res.status(400).json(badResponse(error.message || "Failed to create payout", 400));
   }
 };
 
 const getPayoutById = async (req, res) => {
-  const Response = response;
   try {
     const payout = await payoutService.getPayoutById(req.params.id);
     if (!payout) {
-      Response.badResponse.message = "Payout not found";
-      Response.badResponse.status = 404;
-      return res.status(404).json(Response.badResponse);
+      return res.status(404).json(badResponse("Payout not found", 404));
     }
-    Response.goodResponse.data = payout;
-    return res.json(Response.goodResponse);
+    return res.json(goodResponse(payout));
   } catch (error) {
-    Response.badResponse.message = "Failed to get payout";
-    return res.status(500).json(Response.badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 
 const getPayoutsByAgent = async (req, res) => {
-  const Response = response;
   try {
     const payouts = await payoutService.getPayoutsByAgentId(req.params.agentId);
-    Response.goodResponse.data = payouts;
-    Response.goodResponse.message = "Payouts retrieved successfully";
-    return res.json(Response.goodResponse);
+    return res.json(goodResponse(payouts, "Payouts retrieved successfully"));
   } catch (error) {
-    Response.badResponse.message = "Failed to get payouts";
-    return res.status(500).json(Response.badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 
 const getPayoutsByHost = async (req, res) => {
-  const Response = response;
   try {
     const payouts = await payoutService.getPayoutsByHostId(req.params.hostId);
-    Response.goodResponse.data = payouts;
-    Response.goodResponse.message = "Payouts retrieved successfully";
-    return res.json(Response.goodResponse);
+    return res.json(goodResponse(payouts, "Payouts retrieved successfully"));
   } catch (error) {
-    Response.badResponse.message = "Failed to get payouts";
-    return res.status(500).json(Response.badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 
 const markAsPaid = async (req, res) => {
-  const Response = response;
   try {
     const payout = await payoutService.markAsPaid(req.params.id);
     if (!payout) {
-      Response.badResponse.message = "Payout not found";
-      Response.badResponse.status = 404;
-      return res.status(404).json(Response.badResponse);
+      return res.status(404).json(badResponse("Payout not found", 404));
     }
-    Response.goodResponse.data = payout;
-    Response.goodResponse.message = "Payout marked as paid";
-    return res.json(Response.goodResponse);
+    return res.json(goodResponse(payout, "Payout marked as paid"));
   } catch (error) {
-    Response.badResponse.message = "Failed to mark payout as paid";
-    return res.status(500).json(Response.badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 
 const updatePayout = async (req, res) => {
-  const Response = response;
   try {
     const payout = await payoutService.updatePayout(req.params.id, req.body);
     if (!payout) {
-      Response.badResponse.message = "Payout not found";
-      Response.badResponse.status = 404;
-      return res.status(404).json(Response.badResponse);
+      return res.status(404).json(badResponse("Payout not found", 404));
     }
-    Response.goodResponse.data = payout;
-    Response.goodResponse.message = "Payout updated successfully";
-    return res.json(Response.goodResponse);
+    return res.json(goodResponse(payout, "Payout updated successfully"));
   } catch (error) {
-    Response.badResponse.message = "Failed to update payout";
-    return res.status(500).json(Response.badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 
 const getPendingPayouts = async (req, res) => {
-  const Response = response;
   try {
     const payouts = await payoutService.getPendingPayoutsForAgent(req.params.agentId);
-    Response.goodResponse.data = payouts;
-    Response.goodResponse.message = "Pending payouts retrieved successfully";
-    return res.json(Response.goodResponse);
+    return res.json(goodResponse(payouts, "Pending payouts retrieved successfully"));
   } catch (error) {
-    Response.badResponse.message = "Failed to get pending payouts";
-    return res.status(500).json(Response.badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 
 const getTotalPending = async (req, res) => {
-  const Response = response;
   try {
     const total = await payoutService.getTotalPendingForAgent(req.params.agentId);
-    Response.goodResponse.data = { total };
-    return res.json(Response.goodResponse);
+    return res.json(goodResponse({ total }));
   } catch (error) {
-    Response.badResponse.message = "Failed to get total pending";
-    return res.status(500).json(Response.badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 

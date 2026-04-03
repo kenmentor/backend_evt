@@ -1,60 +1,47 @@
 const { booking_service } = require("../service");
 const { response } = require("../utility");
-// getting booking details
+const { goodResponse, badResponse } = response;
+
 async function get_booking_details(req, res) {
   const role = req.query.role;
-  const idObject = await req.params;
-  console.log(idObject);
+  const idObject = req.params;
 
   if (!(idObject.userId && idObject.bookingId)) {
-    const Response = response.badResponse;
-    Response.message = "booking id  is required";
-    return res.json(Response);
+    return res.status(400).json(badResponse("Booking id is required", 400));
   }
   try {
-    console.log("hello ");
-    const Response = response.goodResponse;
     const data = await booking_service.get_booking_details(idObject, role);
-    console.log(data);
-    return res.json((Response.data = data));
+    return res.json(goodResponse(data));
   } catch (error) {
-    const Response = response.badResponse;
-    Response.message = error.message;
-    console.log(error);
-    return res.json(Response);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
-/// getting all booking that has the userid
+
 async function get_all_booking(req, res) {
-  console.log(req.query.role, req.params.userId);
   const role = req.query.role;
   try {
     const userId = req.params.userId;
-
-    const Response = response.goodResponse;
     const data = await booking_service.get_all_booking(userId, role);
     const updatedBookings = data.map((b) => {
       const checkInDate = new Date(b.checkIn);
       const expired = b.expiredDate
         ? new Date(b.expiredDate)
         : new Date(checkInDate.getTime() + 3 * 24 * 60 * 60 * 1000);
-
       return { ...b, expiredDate: expired.toISOString() };
     });
-    return res.json((Response.data = updatedBookings));
+    return res.json(goodResponse(updatedBookings));
   } catch (error) {
-    console.log(error);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 async function create_booking(req, res) {
   const role = req.query.role;
   try {
-    const bodyObject = await req.body;
-    const Response = response.goodResponse;
+    const bodyObject = req.body;
     const data = await booking_service.create_booking(bodyObject, role);
-    return res.json((Response.data = data));
+    return res.json(goodResponse(data, "Booking created successfully"));
   } catch (error) {
-    console.log(error);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 

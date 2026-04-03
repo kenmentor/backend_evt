@@ -5,12 +5,12 @@ const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 const route = require("./routes");
+const { badResponse } = require("./utility/response");
 
 const app = express();
 const http = require("http");
 const { Server } = require("socket.io");
 
-// ✅ CORS and cookies first
 app.use(
   cors({
     origin: [
@@ -25,10 +25,8 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Register routes BEFORE json parser
 app.use("/", route);
 
-// ✅ Socket.io setup
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -43,15 +41,18 @@ const io = new Server(server, {
   },
 });
 
-// Initialize chat socket handler
 const { initializeChatSocket } = require("./socket/chatHandler");
 const { setSocketIO } = require("./socket/emitHelper");
 const chatNamespace = io.of("/chat");
 initializeChatSocket(chatNamespace);
 setSocketIO(io);
 
-// ✅ Optional: apply urlencoded after json if needed
-// app.use(express.urlencoded({ extended: true }));
+app.use((err, req, res, next) => {
+  console.error("Global error handler:", err);
+  const status = err.status || 500;
+  const message = err.message || "Internal server error";
+  res.status(status).json(badResponse(message, status, err));
+});
 
 const PORT = process.env.PORT || 5036;
 server.listen(PORT, () => {

@@ -1,5 +1,6 @@
 const { house_service } = require("../service");
 const { response } = require("../utility");
+const { goodResponse, badResponse } = response;
 
 function populatehouse(query) {
   return query.populate({
@@ -9,35 +10,23 @@ function populatehouse(query) {
   });
 }
 const get_house_detail = async (req, res) => {
-  console.log();
   try {
     const { id } = req.params;
     if (!id) {
-      const responseData = response.badResponse;
-      responseData.message = "ID required";
-      return res.json(responseData).status(200);
+      return res.status(400).json(badResponse("ID is required"));
     }
-    console.log(id, "this id jbfyfyuf by");
-    const data = await house_service.get_details(id); // ✅ Pass correct ID
-    const responseData = response.goodResponse;
-    responseData.data = await populatehouse(data);
-    console.log(responseData, "response data");
-    res.json(responseData).status(200);
+    const data = await house_service.get_details(id);
+    return res.json(goodResponse(await populatehouse(data)));
   } catch (error) {
-    console.error("Error fetching resource:", error);
-    res.status(500).json({ error: "Failed to fetch resource" }); // ✅ Send error response
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 };
 
 async function get_house(req, res) {
-  console.log("Incoming query params:", req.query);
   const mongoose = require("mongoose");
-
-  // Destructure based on keyword interface (include new fields)
   const {
     type,
     min,
-
     max,
     searchWord,
     limit,
@@ -46,8 +35,8 @@ async function get_house(req, res) {
     id,
     hostId,
     landmark,
-    amenities, // ✅ new
-    category, // ✅ new
+    amenities,
+    category,
   } = req.query;
 
   try {
@@ -55,108 +44,64 @@ async function get_house(req, res) {
       type,
       min: min ? parseInt(min) : undefined,
       max: max ? parseInt(max) : undefined,
-      location: decodeURIComponent(searchWord || ""), // matches frontend
+      location: decodeURIComponent(searchWord || ""),
       limit: limit ? parseInt(limit) : 50,
       lga,
       state,
       landmark,
-      amenities: amenities ? amenities.split(",") : undefined, // ✅ handle multiple
+      amenities: amenities ? amenities.split(",") : undefined,
       category,
       id,
-
       hostId,
     });
 
-    const responseData = response.goodResponse;
-    responseData.data = data;
-    return res.status(200).json(responseData);
+    return res.json(goodResponse(data));
   } catch (error) {
-    const responseData = response.badResponse;
-    console.error("Error fetching data from DB:", error);
-    res.status(500).json(responseData);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 
 async function update_house_view(req, res) {
-  console.log("commmmmmmmmm");
-  const id = await req.params.id;
+  const id = req.params.id;
   try {
     const data = await house_service.update_house_view(id);
-    const responseData = response.goodResponse;
-    responseData.data = data;
-    res.json(responseData);
-  } catch (erro) {
-    const responseData = response.badResponse;
-    res.json(responseData);
-    console.log("erro happen while updating view ");
-    throw erro;
+    return res.json(goodResponse(data));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 
 async function upload_house(req, res) {
   try {
     const { files, body, user } = req;
-
-    console.log("Upload house controller - user:", user);
-    console.log("Body received:", body);
-
     const userId = user?.id;
     if (!userId) {
-      return res.status(401).json({
-        status: false,
-        message: "Authentication required",
-      });
+      return res.status(401).json(badResponse("Authentication required", 401));
     }
-
     const data = await house_service.upload_house(files, body, userId);
-
-    res.status(200).json({
-      status: true,
-      message: "House uploaded successfully",
-      data,
-    });
+    return res.json(goodResponse(data, "House uploaded successfully"));
   } catch (error) {
-    console.error("Upload failed:", error);
-    res.status(500).json({
-      status: false,
-      message: error.message || "Internal server error",
-    });
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 async function update_house(req, res) {
   try {
     const { body, params } = req;
     const { id } = params;
-
     if (body.price) {
       body.price = Number(body.price);
     }
-
     const data = await house_service.update_house(id, body);
-
-    const responseData = {
-      ...response.goodResponse,
-      data,
-    };
-
-    res.json(responseData);
-  } catch (err) {
-    console.error("Update house error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to update house",
-      error: err.message,
-    });
+    return res.json(goodResponse(data, "House updated successfully"));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 
 async function delete_house(req, res) {
-  console.log("commmmmmmmmm");
-  const id = await req.body.id;
+  const id = req.body.id;
   const data = await user_service.delete();
-  const responseData = response.goodResponse;
-  responseData.data = data;
-  res.json(responseData);
+  return res.json(goodResponse(data));
 }
 
 module.exports = {

@@ -3,52 +3,39 @@ const { user_service, verification_service } = require("../service");
 require("dotenv").config();
 const mongoose = require("mongoose");
 const cloudinary = require("cloudinary").v2;
-
 const { generateTokenAndSetCookie } = require("../utility");
 const bcrypt = require("bcryptjs/dist/bcrypt");
 const { sendVerificationEmail } = require("../utility/mail-trap/emails");
+const { goodResponse, badResponse } = response;
 
 async function get_user(req, res) {
   const id = req.params.id;
 
   try {
-    // Validate MongoDB ObjectId
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid ID format" });
+      return res.status(400).json(badResponse("Invalid ID format", 400));
     }
 
-    // Fetch user from DB using your service
     const data = await user_service.get_user(id);
 
     if (!data) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json(badResponse("User not found", 404));
     }
 
-    const { goodResponse } = response;
-    goodResponse.data = data;
-
-    return res.status(200).json(goodResponse);
+    return res.json(goodResponse(data));
   } catch (error) {
-    const { badResponse } = response;
-    badResponse.message = error.message;
-    console.error("Error fetching data from DB:", error);
-
-    return res.status(500).json(badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 
 async function edit_user_detail(req, res) {
   const id = req.params.id;
-  const { body, file, files } = req;
-  console.log(file);
+  const { body, file } = req;
+
   const uploadBufferToCloudinary = (fileBuffer, folder = "user") => {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        {
-          folder,
-          resource_type: "auto",
-          timeout: 600000, // 10 minutes
-        },
+        { folder, resource_type: "auto", timeout: 600000 },
         (error, result) => {
           if (result) resolve(result);
           else reject(error);
@@ -58,96 +45,91 @@ async function edit_user_detail(req, res) {
     });
   };
 
-  let profileImageUrl = "";
-  console.log(file, "that is it ");
-  const result = await uploadBufferToCloudinary(file.buffer, "profileImage");
-  profileImageUrl = result.secure_url;
-  console.log(profileImageUrl, "hrhjrhrrhjrhrhrhrhrhrhhrhrhrhrhrh");
-
   try {
-    let object = {
-      email: body.email,
-      phoneNumber: body.phoneNumber,
-    };
+    let object = {};
+    if (body.email) object.email = body.email;
+    if (body.phoneNumber) object.phoneNumber = body.phoneNumber;
+    if (body.userName) object.userName = body.userName;
+    if (body.address) object.address = body.address;
+    if (body.bio) object.bio = body.bio;
 
-    object.profileImage = profileImageUrl;
-    // Handle Cloudinary upload
+    if (file && file.buffer) {
+      const result = await uploadBufferToCloudinary(file.buffer, "profileImage");
+      object.profileImage = result.secure_url;
+    }
 
     const data = await user_service.edit_user_details(id, object);
+    return res.json(goodResponse(data, "Successfully updated your profile"));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
+  }
+}
 
-    const responseData = { ...response.goodResponse };
-    responseData.message = "Successfully updated your profile";
-    responseData.data = data;
-    console.log(data);
-    return res.json(responseData);
-  } catch (err) {
-    const responseData = { ...response.badResponse };
-    responseData.message = `Something went wrong: ${err.message || err}`;
-    return res.json(responseData);
+async function upload_profile_picture(req, res) {
+  const id = req.params.id;
+  const { file } = req;
+
+  const uploadBufferToCloudinary = (fileBuffer, folder = "user") => {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder, resource_type: "auto", timeout: 600000 },
+        (error, result) => {
+          if (result) resolve(result);
+          else reject(error);
+        }
+      );
+      stream.end(fileBuffer);
+    });
+  };
+
+  try {
+    if (!file || !file.buffer) {
+      return res.status(400).json(badResponse("No image file provided", 400));
+    }
+
+    const result = await uploadBufferToCloudinary(file.buffer, "profileImage");
+    const profileImageUrl = result.secure_url;
+    const data = await user_service.edit_user_details(id, { profileImage: profileImageUrl });
+    return res.json(goodResponse(data, "Profile image updated successfully"));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 
 function logout_user(req, res) {
-  const { goodResponse } = response;
-
   res.clearCookie("token");
   res.clearCookie("isAuth");
-  goodResponse.message = " logut succesful ";
-  return res.json(goodResponse);
+  return res.json(goodResponse(null, "Logout successful"));
 }
 async function login_user(req, res) {
   const { email, password } = req.body;
 
-  console.log("Login controller - email:", email);
-  console.log("Login controller - password:", password ? "provided" : "missing");
-
   try {
     const data = await verification_service.login_user(password, email);
 
-    console.log("Login result:", data ? "success" : "failed/null");
-
     if (!data) {
-      const resp = {
-        ...response.badResponse,
-        message: "Invalid email or password",
-      };
-      return res.status(401).json(resp);
+      return res.status(401).json(badResponse("Invalid email or password", 401));
     }
 
-    // Generate JWT token and set cookie
     generateTokenAndSetCookie(res, data._id);
-
-    const resp = {
-      ...response.goodResponse,
-      message: "User successfully logged in",
-      data,
-    };
-    return res.status(resp.status).json(resp);
-  } catch (err) {
-    console.error("Login controller error:", err);
-    const resp = { ...response.badResponse, message: err.message, error: err };
-    return res.status(500).json(resp);
+    return res.json(goodResponse(data, "User successfully logged in"));
+  } catch (error) {
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 
 async function forgot_password(req, res) {
   const { email } = req.body;
-  const { goodResponse, badResponse } = response;
   try {
     const result = await user_service.forgot_password(email);
-    
+
     if (!result.success && result.message === "User not found") {
-      badResponse.message = "No account found with this email address";
-      return res.status(404).json(badResponse);
+      return res.status(404).json(badResponse("No account found with this email address", 404));
     }
-    
-    goodResponse.message = result.message;
-    goodResponse.data = { email };
-    return res.json(goodResponse);
+
+    return res.json(goodResponse({ email }, result.message));
   } catch (error) {
-    console.error("Error fetching data from DB:", error);
-    badResponse.message = error.message;
-    return res.status(500).json(badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 async function signup_user(req, res) {
@@ -159,17 +141,14 @@ async function signup_user(req, res) {
     dateOfBirth,
     userName,
   } = req.body;
-  /////CHECK IF USER EXIST
+
   const alreadyExist = await user_service.find_user({
     email: email,
     verifiedEmail: true,
   });
 
   if (alreadyExist) {
-    response.badResponse.message = "this email have been used  ";
-
-    response.badResponse.status = 501;
-    return res.status(response.badResponse.status).json(response.badResponse);
+    return res.status(501).json(badResponse("This email has already been used", 501));
   }
   if (email && password && role && phoneNumber && dateOfBirth) {
     const data = await verification_service.signup_user({
@@ -182,44 +161,22 @@ async function signup_user(req, res) {
       dateOfBirth,
       userName,
     });
-
-    // generateTokenAndSetCookie(res, data._id.toString());
-
-    const { goodResponse } = response;
-
-    return res.status(goodResponse.status).json((goodResponse.data = data));
+    return res.json(goodResponse(data));
   }
-  const { goodResponse } = response;
-  return res
-    .status(goodResponse.status)
-    .json((response.badResponse.message = "all input is required"));
+  return res.status(400).json(badResponse("All input is required", 400));
 }
-// async function verify_user(req, res) {
-//   const { verificationCode } = req.body;
-//   console.log(verificationCode)
-//   const data = await user_service.verify(verificationCode);
-//   const responseData = response.goodResponse;
-//   responseData.data = data;
-//   return res.json(responseData);
-// }
 
 async function delete_user(req, res) {
   try {
-    const id = await req.user.id;
+    const id = req.user.id;
     const data = await user_service.delete(id);
-    const responseData = response.goodResponse;
-    responseData.data = "data";
-    return res.json(responseData);
+    return res.json(goodResponse(data, "User deleted successfully"));
   } catch (error) {
-    const responseData = response.badResponse;
-    responseData.message = error.message;
-    return res.json(responseData);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 async function find_users(req, res) {
-  const { minAge, maxAge, rule, email, limit, bardge, id, adminVerified } =
-    req.query;
-  console.log(req.query);
+  const { minAge, maxAge, rule, email, limit, bardge, id, adminVerified } = req.query;
 
   try {
     const data = await user_service.find_users({
@@ -232,65 +189,40 @@ async function find_users(req, res) {
       id: id,
       adminVerified: adminVerified,
     });
-    const responseData = response.goodResponse;
-    responseData.data = data;
-    return res.json(responseData).status(200);
+    return res.json(goodResponse(data));
   } catch (error) {
-    const responseData = response.badResponse;
-    console.error("Error fetching data from DB:", error);
-    return res.status(500).json((responseData.message = error.message));
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 async function pioneer(req, res) {
-  console.log("hhhhhhhhhhhhhhhhhhhhhhhhh");
   try {
-    const data = await user_service.filter({
-      pioneer: true,
-    });
-    const responseData = response.goodResponse;
-    responseData.data = data;
-    console.log(data);
-    return res.json(responseData).status(200);
+    const data = await user_service.filter({ pioneer: true });
+    return res.json(goodResponse(data));
   } catch (error) {
-    const responseData = response.badResponse;
-    console.error("Error fetching data from DB:", error);
-    return res.status(500).json((responseData.message = error.message));
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 async function reset_password(req, res) {
-  const { badResponse, goodResponse } = response;
   const { token } = req.params;
   const { password } = req.body;
-  
-  console.log("Reset password controller - token:", token);
-  console.log("Reset password controller - password length:", password ? password.length : 0);
-  
+
   if (!password || password.length < 6) {
-    badResponse.message = "Password must be at least 6 characters";
-    return res.status(400).json(badResponse);
+    return res.status(400).json(badResponse("Password must be at least 6 characters", 400));
   }
-  
+
   try {
-    console.log("Calling user_service.reset_password...");
     const result = await user_service.reset_password({
       token: token,
       password: password,
     });
-    
-    console.log("Reset password result:", JSON.stringify(result));
-    
+
     if (!result.success) {
-      badResponse.message = result.message;
-      return res.status(400).json(badResponse);
+      return res.status(400).json(badResponse(result.message, 400));
     }
-    
-    goodResponse.data = { email: result.user.email };
-    goodResponse.message = result.message;
-    return res.json(goodResponse);
+
+    return res.json(goodResponse({ email: result.user.email }, result.message));
   } catch (error) {
-    console.error("Reset password controller error:", error);
-    badResponse.message = error.message;
-    return res.status(500).json(badResponse);
+    return res.status(500).json(badResponse(error.message, 500, error));
   }
 }
 
@@ -298,12 +230,12 @@ module.exports = {
   signup_user,
   login_user,
   edit_user_detail,
+  upload_profile_picture,
   delete_user,
   get_user,
   find_users,
   logout_user,
   forgot_password,
-  reset_password,
   reset_password,
   pioneer,
 };
