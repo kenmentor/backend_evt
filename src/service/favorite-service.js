@@ -1,53 +1,84 @@
-const favoriteRepository = require("../repositories/favorite-repository");
-const Analytics = require("../modules/analytics");
+/**
+ * Favorite Service - Event Sourcing Version
+ */
+
+const { getRepos } = require("../event-sourcing");
+const mongoose = require("mongoose");
+const { Analytics } = require("../modules/analytics");
+
+function getFavoriteRepo() {
+  const { favoriteEventRepo } = getRepos();
+  return favoriteEventRepo;
+}
 
 class FavoriteService {
   async addFavorite(userId, houseId) {
-    const existing = await favoriteRepository.findByUserAndHouse(userId, houseId);
+    const repo = getFavoriteRepo();
+    
+    // Check if already exists
+    const existing = await repo.findOne({ userId, houseId });
     if (existing) {
       throw new Error("Property already in favorites");
     }
 
-    const favorite = await favoriteRepository.create({ userId, houseId });
-
-    await Analytics.create({
-      type: "property_interaction",
-      action: "like",
+    const favoriteId = new mongoose.Types.ObjectId().toString();
+    
+    await repo.create({
+      _id: favoriteId,
       userId,
-      metadata: { propertyId: houseId },
-      sessionId: null,
-      timestamp: new Date(),
-    }).catch(() => {});
+      houseId,
+    });
 
-    return favorite;
+    // Track analytics
+    try {
+      await Analytics.create({
+        type: "property_interaction",
+        action: "like",
+        userId,
+        metadata: { propertyId: houseId },
+        sessionId: null,
+        timestamp: new Date(),
+      });
+    } catch (e) {}
+
+    return await repo.findById(favoriteId);
   }
 
   async removeFavorite(userId, houseId) {
-    const favorite = await favoriteRepository.findByUserAndHouse(userId, houseId);
+    const repo = getFavoriteRepo();
+    
+    const favorite = await repo.findOne({ userId, houseId });
     if (!favorite) {
       throw new Error("Favorite not found");
     }
 
-    await favoriteRepository.delete(userId, houseId);
+    await repo.commands.remove(favorite._id);
+    await repo.handler.runOnce();
 
-    await Analytics.create({
-      type: "property_interaction",
-      action: "unlike",
-      userId,
-      metadata: { propertyId: houseId },
-      sessionId: null,
-      timestamp: new Date(),
-    }).catch(() => {});
+    // Track analytics
+    try {
+      await Analytics.create({
+        type: "property_interaction",
+        action: "unlike",
+        userId,
+        metadata: { propertyId: houseId },
+        sessionId: null,
+        timestamp: new Date(),
+      });
+    } catch (e) {}
 
     return;
   }
 
   async getUserFavorites(userId) {
-    return await favoriteRepository.findByUserId(userId);
+    const repo = getFavoriteRepo();
+    return await repo.find({ userId });
   }
 
   async isFavorite(userId, houseId) {
-    return await favoriteRepository.isFavorite(userId, houseId);
+    const repo = getFavoriteRepo();
+    const favorite = await repo.findOne({ userId, houseId });
+    return !!favorite;
   }
 
   async toggleFavorite(userId, houseId) {

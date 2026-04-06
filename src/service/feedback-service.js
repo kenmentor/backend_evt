@@ -1,13 +1,33 @@
-const { feedbackDB } = require("../modules");
-const { crudRepository } = require("../repositories");
-const crudExtra = new crudRepository(feedbackDB);
+/**
+ * Feedback Service - Event Sourcing Version
+ */
+
+const { getRepos } = require("../event-sourcing");
+const mongoose = require("mongoose");
+
+function getFeedbackRepo() {
+  const { feedbackEventRepo } = getRepos();
+  return feedbackEventRepo;
+}
+
 async function create_feedback(feedbackObj) {
-  crudExtra.create({ userId: feedbackObj.userId, message: feedbackObj.message });
+  const repo = getFeedbackRepo();
+  const feedbackId = new mongoose.Types.ObjectId().toString();
+  
+  await repo.create({
+    _id: feedbackId,
+    userId: feedbackObj.userId,
+    message: feedbackObj.message,
+  });
+  
+  return await repo.findById(feedbackId);
 }
+
 async function get_feedback() {
-  const data = await crudExtra.findAll();
-  return data;
+  const repo = getFeedbackRepo();
+  return await repo.findAll();
 }
+
 module.exports = {
   create_feedback,
   get_feedback,

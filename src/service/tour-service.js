@@ -1,27 +1,51 @@
-const tourRepository = require("../repositories/tour-repository");
-const houseRepository = require("../repositories/house-repository");
-const userRepository = require("../repositories/user-repository");
+/**
+ * Tour Service - Event Sourcing Version
+ */
+
+const { getRepos } = require("../event-sourcing");
+const mongoose = require("mongoose");
+
+function getTourRepo() {
+  const { tourEventRepo } = getRepos();
+  return tourEventRepo;
+}
+
+function getResourceRepo() {
+  const { resourceEventRepo } = getRepos();
+  return resourceEventRepo;
+}
+
+function getUserRepo() {
+  const { userEventRepo } = getRepos();
+  return userEventRepo;
+}
 
 class TourService {
   async createTour(tourData) {
     const { propertyId, guestId, scheduledDate, scheduledTime, notes } = tourData;
+    const repo = getTourRepo();
+    const resourceRepo = getResourceRepo();
+    const userRepo = getUserRepo();
 
-    const property = await houseRepository.findById(propertyId);
+    const property = await resourceRepo.findById(propertyId);
     if (!property) {
       throw new Error("Property not found");
     }
 
-    const guest = await userRepository.findById(guestId);
+    const guest = await userRepo.findById(guestId);
     if (!guest) {
       throw new Error("Guest not found");
     }
 
-    const host = await userRepository.findById(property.host);
+    const host = await userRepo.findById(property.host);
     if (!host) {
       throw new Error("Host not found");
     }
 
-    const tour = await tourRepository.create({
+    const tourId = new mongoose.Types.ObjectId().toString();
+    
+    await repo.create({
+      _id: tourId,
       propertyId,
       propertyTitle: property.title,
       propertyThumbnail: property.thumbnail || "",
@@ -32,55 +56,97 @@ class TourService {
       guestPhone: guest.phoneNumber || tourData.guestPhone || "",
       hostId: property.host,
       hostName: host.userName,
-      agentId: property.agent || null,
-      agentName: property.agent ? (await userRepository.findById(property.agent))?.userName || "" : "",
+      agentId: property.agentId || null,
+      agentName: "",
       scheduledDate,
       scheduledTime: scheduledTime || "",
       notes: notes || "",
-      status: "scheduled",
     });
 
-    return tour;
+    return await repo.findById(tourId);
   }
 
   async getTourById(id) {
-    return await tourRepository.findById(id);
+    const repo = getTourRepo();
+    return await repo.findById(id);
   }
 
   async getToursByGuestId(guestId) {
-    return await tourRepository.findByGuestId(guestId);
+    const repo = getTourRepo();
+    return await repo.find({ guestId });
   }
 
   async getToursByHostId(hostId) {
-    return await tourRepository.findByHostId(hostId);
+    const repo = getTourRepo();
+    return await repo.find({ hostId });
   }
 
   async getToursByAgentId(agentId) {
-    return await tourRepository.findByAgentId(agentId);
+    const repo = getTourRepo();
+    return await repo.find({ agentId });
   }
 
   async getToursByPropertyId(propertyId) {
-    return await tourRepository.findByPropertyId(propertyId);
+    const repo = getTourRepo();
+    return await repo.find({ propertyId });
   }
 
   async updateTourStatus(id, status) {
-    return await tourRepository.updateStatus(id, status);
+    const repo = getTourRepo();
+    
+    switch (status) {
+      case 'completed':
+        await repo.commands.complete(id);
+        break;
+      case 'cancelled':
+        await repo.commands.cancel(id);
+        break;
+      default:
+        throw new Error("Invalid status");
+    }
+    
+    await repo.handler.runOnce();
+    return await repo.findById(id);
   }
 
   async updateTour(id, updateData) {
-    return await tourRepository.update(id, updateData);
+    const repo = getTourRepo();
+    
+    if (updateData.scheduledDate) {
+      await repo.commands.reschedule(id, {
+        scheduledDate: updateData.scheduledDate,
+        scheduledTime: updateData.scheduledTime,
+      });
+      await repo.handler.runOnce();
+    }
+    
+    if (updateData.notes) {
+      await repo.commands.addNotes(id, { notes: updateData.notes });
+      await repo.handler.runOnce();
+    }
+    
+    return await repo.findById(id);
   }
 
   async cancelTour(id) {
-    return await tourRepository.updateStatus(id, "cancelled");
+    const repo = getTourRepo();
+    await repo.commands.cancel(id);
+    await repo.handler.runOnce();
+    return await repo.findById(id);
   }
 
   async completeTour(id) {
-    return await tourRepository.updateStatus(id, "completed");
+    const repo = getTourRepo();
+    await repo.commands.complete(id);
+    await repo.handler.runOnce();
+    return await repo.findById(id);
   }
 
   async deleteTour(id) {
-    return await tourRepository.delete(id);
+    const repo = getTourRepo();
+    await repo.commands.cancel(id);
+    await repo.handler.runOnce();
+    return { deleted: true };
   }
 }
 

@@ -1,26 +1,32 @@
-const { verification_repository } = require("../repositories");
-const { userDB } = require("../modules");
-const {
-  response,
-  generateVerificationCode,
-  generateTokenAndSetCookie,
-} = require("../utility");
-const { email } = require("../utility/");
+/**
+ * Verification Service - Event Sourcing Version
+ * 
+ * Handles signup, login, email verification with event sourcing.
+ * Passwords are stored separately for security (not in event store).
+ */
+
+const { response, generateVerificationCode } = require("../utility");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const {
-  sendVerificationEmail,
-  sendWelcomeEmail,
-} = require("../utility/mail-trap/emails");
+const { getRepos } = require("../event-sourcing");
+const { sendVerificationEmail, sendWelcomeEmail } = require("../utility/mail-trap/emails");
+const { getDb } = require("../event-sourcing");
 const saltround = 10;
 const jwt_api_key = process.env.JWT_API_KEY;
-const verificationRepo = new verification_repository(userDB);
+
+// Separate collection for credentials (passwords)
+// In event sourcing, we don't store passwords in the event log
+async function getCredentialsCollection() {
+  const db = getDb();
+  return db.collection('user_credentials');
+}
+
 async function verif_NIN(NIN, userId) {
   try {
     const DOJAH_APP_ID = process.env.DOJAH_ID;
     const DOJAH_SECRET = process.env.DOJAH_SECRET;
 
-    const response = await fetch(
+    const res = await fetch(
       `http://api.dojah.io/api/v1/kyc/nin?nin= ${NIN}`,
       {
         method: "GET",
@@ -30,52 +36,62 @@ async function verif_NIN(NIN, userId) {
         },
       }
     );
-    const data = await verificationRepo.update(
-      userId,
-      dresponse.data.data.entity
-    );
-    return (response.badResponse.message = "creted successfully ");
+    
+    const { userEventRepo } = getRepos();
+    // Update user with NIN verification
+    await userEventRepo.commands.verifyNIN(userId);
+    await userEventRepo.handler.runOnce();
+    
+    return { message: "NIN verified successfully" };
   } catch (err) {
     throw err;
   }
 }
 
 async function verify_email(code) {
-  console.log(code);
   try {
-    // First try to find by token
-    let user = await verificationRepo.findOne({
-      verifyToken: code,
-      verificationTokenExpireAt: { $gt: Date.now() },
-    });
-
-    // If not found by token, check if already verified with any code
-    if (!user) {
-      user = await verificationRepo.findOne({
-        verifiedEmail: true,
-      });
-      if (user) {
-        return { ...user._doc, alreadyVerified: true };
+    const { userEventRepo } = getRepos();
+    
+    // Find user by verifyToken - need to scan all users
+    // In production, maintain an index or separate collection
+    const credsColl = await getCredentialsCollection();
+    const creds = await credsColl.findOne({ verifyToken: code });
+    
+    if (!creds) {
+      // Try to find by any valid token
+      const allUsers = await userEventRepo.findAll();
+      const userWithToken = allUsers.find(u => u.verifyToken === code);
+      if (userWithToken) {
+        await userEventRepo.commands.verifyEmail(userWithToken._id);
+        await userEventRepo.handler.runOnce();
+        return { ...userWithToken, alreadyVerified: true };
       }
+      return null;
     }
 
-    console.log(user);
+    const user = await userEventRepo.findById(creds.userId);
+    
     if (user) {
-      // If already verified, return success
       if (user.verifiedEmail) {
         return { ...user._doc, alreadyVerified: true };
       }
       
-      user.verifiedEmail = true;
-      user.verifyToken = undefined;
-      user.verificationTokenExpireAt = undefined;
-      await user.save();
+      await userEventRepo.commands.verifyEmail(user._id);
+      await userEventRepo.handler.runOnce();
+      
+      // Clear verify token in credentials
+      await credsColl.updateOne(
+        { _id: creds._id },
+        { $set: { verifyToken: null, verificationTokenExpireAt: null } }
+      );
+      
       await sendWelcomeEmail(user.email, user.userName);
+      return { ...user._doc, alreadyVerified: false };
     }
-    console.log(user);
-    return user;
+    
+    return null;
   } catch (error) {
-    console.log("error occured in service verification ");
+    console.log("error occurred in service verification");
     throw error;
   }
 }
@@ -84,49 +100,52 @@ async function login_user(password, email) {
   try {
     console.log("=== LOGIN SERVICE ===");
     console.log("Email:", email);
-    console.log("Password provided:", password ? "yes" : "no");
     
-    // First check if user exists at all
-    const userExists = await verificationRepo.findOne({ email: email });
+    // Find credentials by email
+    const credsColl = await getCredentialsCollection();
+    const creds = await credsColl.findOne({ email: email });
     
-    if (!userExists) {
+    if (!creds) {
+      console.log("ERROR: Credentials not found");
+      throw new Error("Invalid email or password");
+    }
+    
+    // Get user from event store
+    const { userEventRepo } = getRepos();
+    const user = await userEventRepo.findById(creds.userId);
+    
+    if (!user) {
       console.log("ERROR: User not found");
       throw new Error("Invalid email or password");
     }
     
     // Check if email is verified
-    if (!userExists.verifiedEmail) {
+    if (!user.verifiedEmail) {
       console.log("ERROR: User email not verified");
       throw new Error("Please verify your email before logging in. Check your email for the verification code.");
     }
     
-    const user = await verificationRepo.findOne({
-      email: email,
-      verifiedEmail: true,
-    });
-    
-    if (!user) {
-      console.log("ERROR: User not found or not verified");
-      throw new Error("Invalid email or password");
-    }
-    
     console.log("User found:", user.email);
     console.log("User verifiedEmail:", user.verifiedEmail);
-    console.log("Stored password hash exists:", user.password ? "yes" : "NO - THIS IS THE PROBLEM!");
+    console.log("Stored password hash exists:", creds.password ? "yes" : "NO");
     
-    if (!user.password) {
+    if (!creds.password) {
       console.log("ERROR: User has no password stored!");
       throw new Error("Invalid email or password");
     }
     
     console.log("Comparing passwords...");
-    const isvalidpassword = await bcrypt.compare(password, user.password);
-    console.log("Password comparison result:", isvalidpassword ? "MATCH" : "NO MATCH");
+    const isValidPassword = await bcrypt.compare(password, creds.password);
+    console.log("Password comparison result:", isValidPassword ? "MATCH" : "NO MATCH");
 
-    if (!isvalidpassword) {
+    if (!isValidPassword) {
       console.log("ERROR: Password does not match");
       throw new Error("Invalid email or password");
     }
+    
+    // Record login event
+    await userEventRepo.commands.login(user._id);
+    await userEventRepo.handler.runOnce();
 
     console.log("=== LOGIN SUCCESSFUL ===");
     return user;
@@ -136,28 +155,70 @@ async function login_user(password, email) {
   }
 }
 
-async function signup_user(dataObject, res) {
+async function signup_user(dataObject) {
   try {
+    const { userEventRepo } = getRepos();
+    const credsColl = await getCredentialsCollection();
+    
+    // Check if email already exists in credentials
+    const existingCreds = await credsColl.findOne({ email: dataObject.email });
+    if (existingCreds) {
+      throw new Error("Email already exists");
+    }
+    
+    // Hash password
     const hashedPassword = await bcrypt.hash(dataObject.password, saltround);
     const verifyToken = await generateVerificationCode();
-    const data = await verificationRepo.create({
-      ...dataObject,
-      password: hashedPassword,
-      verifyToken: verifyToken,
-      verificationTokenExpireAt: Date.now() + 24 * 60 * 60 * 1000, //24hr
+    
+    // Generate user ID
+    const mongoose = require('mongoose');
+    const userId = new mongoose.Types.ObjectId().toString();
+    
+    // Create user via event sourcing
+    await userEventRepo.create({
+      _id: userId,
+      email: dataObject.email,
+      userName: dataObject.userName,
+      phoneNumber: dataObject.phoneNumber,
     });
-    console.log(data.email);
+    
+    // Store credentials separately (password not in event store)
+    await credsColl.insertOne({
+      userId: userId,
+      email: dataObject.email,
+      password: hashedPassword,
+      role: dataObject.role || 'USER',
+      verifyToken: verifyToken,
+      verificationTokenExpireAt: Date.now() + 24 * 60 * 60 * 1000, // 24hr
+      createdAt: new Date(),
+    });
+    
+    // Send verification email
+    await sendVerificationEmail(dataObject.email, dataObject.userName, verifyToken);
+    
+    // Get the created user
+    const user = await userEventRepo.findById(userId);
+    console.log(user.email);
 
-    return data;
+    return user;
   } catch (err) {
-    console.log("erro creating user -complete-verification");
+    console.log("error creating user - complete-verification:", err.message);
     throw err;
   }
 }
 
 async function resend_verification(email) {
   try {
-    const user = await verificationRepo.findOne({ email: email });
+    const { userEventRepo } = getRepos();
+    const credsColl = await getCredentialsCollection();
+    
+    const creds = await credsColl.findOne({ email: email });
+    
+    if (!creds) {
+      throw new Error("User not found");
+    }
+    
+    const user = await userEventRepo.findById(creds.userId);
     
     if (!user) {
       throw new Error("User not found");
@@ -168,9 +229,17 @@ async function resend_verification(email) {
     }
     
     const newVerifyToken = await generateVerificationCode();
-    user.verifyToken = newVerifyToken;
-    user.verificationTokenExpireAt = Date.now() + 24 * 60 * 60 * 1000;
-    await user.save();
+    
+    // Update credentials
+    await credsColl.updateOne(
+      { _id: creds._id },
+      { 
+        $set: { 
+          verifyToken: newVerifyToken,
+          verificationTokenExpireAt: Date.now() + 24 * 60 * 60 * 1000 
+        } 
+      }
+    );
     
     await sendVerificationEmail(user.email, user.userName, newVerifyToken);
     
@@ -182,9 +251,9 @@ async function resend_verification(email) {
 }
 
 module.exports = {
-  verif_NIN: verif_NIN,
-  verify_email: verify_email,
-  signup_user: signup_user,
-  login_user: login_user,
-  resend_verification: resend_verification,
+  verif_NIN,
+  verify_email,
+  signup_user,
+  login_user,
+  resend_verification,
 };

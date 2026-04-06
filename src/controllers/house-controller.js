@@ -78,10 +78,17 @@ async function upload_house(req, res) {
     if (!userId) {
       return res.status(401).json(badResponse("Authentication required", 401));
     }
+    console.log("=== UPLOAD HOUSE CONTROLLER ===");
+    console.log("User ID:", userId);
+    console.log("Files received:", files ? Object.keys(files) : "none");
+    console.log("Body fields:", Object.keys(body));
     const data = await house_service.upload_house(files, body, userId);
     return res.json(goodResponse(data, "House uploaded successfully"));
   } catch (error) {
-    return res.status(500).json(badResponse(error.message, 500, error));
+    console.error("=== UPLOAD HOUSE ERROR ===");
+    console.error("Error:", error.message);
+    console.error("Stack:", error.stack);
+    return res.status(500).json(badResponse(error.message, 500, { message: error.message, stack: error.stack }));
   }
 }
 async function update_house(req, res) {

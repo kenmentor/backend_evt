@@ -1,22 +1,22 @@
+/**
+ * Payment Service - Event Sourcing Version
+ */
+
 const axios = require("axios");
 const { get_details } = require("./house-service");
-const { connectDB } = require("../utility");
-const { paymentDB, bookingDB, resourceDB } = require("../modules/");
-const { crudRepository } = require("../repositories");
+const { getRepos } = require("../event-sourcing");
 const mongoose = require("mongoose");
-const payment = require("../modules/payment");
-const payment_repo = require("../repositories/payment_repo");
 require("dotenv").config();
-const Payment = new payment_repo(paymentDB);
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET;
 
-/**
- * Initialize Bank Transfer
- */
+function getPaymentRepo() {
+  const { paymentEventRepo } = getRepos();
+  return paymentEventRepo;
+}
+
 async function initializeBank({ email, amount, guest, host, house }) {
   try {
-    // ✅ Get house details by house ID, not host
     const houseDetails = await get_details(house);
 
     if (!houseDetails.avaliable) {
@@ -24,21 +24,17 @@ async function initializeBank({ email, amount, guest, host, house }) {
     }
     console.log(amount);
 
-    // ✅ Initialize Paystack transaction
     const res = await axios.post(
       "https://api.paystack.co/transaction/initialize",
       {
         email,
         amount: amount * 100,
-        // channels: ["bank_transfer"],
         metadata: {
           guest,
           host,
           email,
-          price: houseDetails.price, // store as naira, Paystack expects *100 already
+          price: houseDetails.price,
           house,
-          checkIn: houseDetails.checkIn,
-          checkOut: houseDetails.checkOut,
         },
       },
       {
@@ -59,73 +55,83 @@ async function initializeBank({ email, amount, guest, host, house }) {
       },
     };
   } catch (error) {
-    console.error(
-      "Paystack initialization error:",
-      error.response?.data || error.message
-    );
-
+    console.error("Paystack initialization error:", error.response?.data || error.message);
     return {
       success: false,
-      message:
-        error.response?.data?.message ||
-        error.message ||
-        "Something went wrong during initialization",
+      message: error.response?.data?.message || error.message || "Something went wrong during initialization",
     };
   }
 }
 
-/**
- * Webhook Processing
- */
 async function Payment_webhook(paymentdata) {
   try {
-    // Log the incoming data for debugging
     console.log(paymentdata, "Payment service input");
 
-    // Basic sanity check to avoid mongoose validation errors
-    if (
-      !paymentdata.guest ||
-      !paymentdata.host ||
-      !paymentdata.house ||
-      !paymentdata.amount ||
-      !paymentdata.paymentRef
-    ) {
-      throw new Error(
-        "Missing required payment fields",
-        guest,
-        host,
-        house,
-        amount,
-        paymentRef
-      );
+    if (!paymentdata.guest || !paymentdata.host || !paymentdata.house || !paymentdata.amount || !paymentdata.paymentRef) {
+      throw new Error("Missing required payment fields");
     }
 
-    // Forward the data to the repository that handles transactions
-    const payment = await Payment.processPayment(paymentdata);
+    const repo = getPaymentRepo();
+    const paymentId = new mongoose.Types.ObjectId().toString();
 
-    console.log("Payment processed successfully:", payment);
+    // Initiate payment via event sourcing
+    await repo.create({
+      _id: paymentId,
+      host: paymentdata.host,
+      guest: paymentdata.guest,
+      house: paymentdata.house,
+      amount: paymentdata.amount,
+      paymentRef: paymentdata.paymentRef,
+      method: paymentdata.method || 'paystack',
+    });
 
-    return payment;
+    // If payment is successful, complete it
+    if (paymentdata.status === 'success') {
+      await repo.commands.complete(paymentId);
+      await repo.handler.runOnce();
+    } else {
+      await repo.commands.fail(paymentId);
+      await repo.handler.runOnce();
+    }
+
+    console.log("Payment processed successfully");
+    return await repo.findById(paymentId);
   } catch (error) {
     console.error("Payment service error:", error.message);
     throw error;
   }
 }
 
-/**
- * Call Paystack Refund API
- */
 async function get_history(id) {
-  const data = await payment.find({ guest: id });
-  return data;
+  const repo = getPaymentRepo();
+  return await repo.find({ guest: id });
 }
+
 async function refund(reference, amount) {
   try {
+    const repo = getPaymentRepo();
+    const payments = await repo.find({ paymentRef: reference });
+    
+    if (payments.length === 0) {
+      throw new Error("Payment not found");
+    }
+    
+    const payment = payments[0];
+    
+    // Request refund
+    await repo.commands.requestRefund(payment._id);
+    await repo.handler.runOnce();
+    
+    // Process refund
+    await repo.commands.refund(payment._id, { refundAmount: amount });
+    await repo.handler.runOnce();
+
+    // Call Paystack refund API
     const res = await axios.post(
       "https://api.paystack.co/refund",
       {
         transaction: reference,
-        amount: amount * 100, // Paystack expects kobo
+        amount: amount * 100,
       },
       {
         headers: {
@@ -139,12 +145,10 @@ async function refund(reference, amount) {
     return res.data;
   } catch (error) {
     console.error("Refund failed:", error.response?.data || error.message);
+    throw error;
   }
 }
 
-/**
- * Check Payment Verification
- */
 async function check_payment(reference) {
   try {
     const paystackRes = await axios.get(
@@ -166,10 +170,7 @@ async function check_payment(reference) {
       reference: data.reference,
     };
   } catch (error) {
-    console.error(
-      "Error verifying payment:",
-      error.response?.data || error.message
-    );
+    console.error("Error verifying payment:", error.response?.data || error.message);
     throw new Error("Failed to verify payment");
   }
 }

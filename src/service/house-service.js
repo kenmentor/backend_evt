@@ -1,38 +1,12 @@
-const { resourceDB } = require("../modules");
-const { house_repository, crudRepository } = require("../repositories");
-const { connectDB } = require("../utility");
+/**
+ * House Service - Event Sourcing Version
+ * 
+ * Uses event sourcing for resource/house operations.
+ */
+
+const { getRepos } = require("../event-sourcing");
 const { v2: cloudinary } = require("cloudinary");
-
 require("dotenv").config();
-
-const newcrudRepositoryExtra = new house_repository(resourceDB);
-
-async function find_house(object) {
-  await connectDB();
-  return newcrudRepositoryExtra.filter(object);
-}
-
-async function update_house(id, object) {
-  return newcrudRepositoryExtra.update(id, object);
-}
-
-async function get_details(id) {
-  return newcrudRepositoryExtra.getDetail(id);
-}
-
-async function update_house_view(id) {
-  try {
-    const data = await newcrudRepositoryExtra.update(
-      id,
-      { $inc: { view: 1 } },
-      { new: true }
-    );
-    return { views: data };
-  } catch (err) {
-    console.error("Error while updating house view:", err);
-    throw err;
-  }
-}
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -40,8 +14,69 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+function getResourceRepo() {
+  const { resourceEventRepo } = getRepos();
+  return resourceEventRepo;
+}
+
+async function find_house(object) {
+  const repo = getResourceRepo();
+  
+  // Handle filter cases
+  if (object.role) {
+    return await repo.find({ role: object.role });
+  }
+  if (object.location) {
+    // For regex search, return all and filter in memory for now
+    const all = await repo.findAll();
+    return all.filter(h => h.location && h.location.includes(object.location));
+  }
+  if (object.state) {
+    return await repo.find({ state: object.state });
+  }
+  if (object.category) {
+    return await repo.find({ category: object.category });
+  }
+  
+  return await repo.findAll();
+}
+
+async function update_house(id, object) {
+  const repo = getResourceRepo();
+  
+  // Handle different update fields
+  if (object.avaliable !== undefined) {
+    await repo.commands.setAvailability(id, { avaliable: object.avaliable });
+    await repo.handler.runOnce();
+  }
+  
+  if (object.price) {
+    await repo.commands.updatePrice(id, { price: object.price });
+    await repo.handler.runOnce();
+  }
+  
+  return await repo.findById(id);
+}
+
+async function get_details(id) {
+  const repo = getResourceRepo();
+  return await repo.findById(id);
+}
+
+async function update_house_view(id) {
+  try {
+    const repo = getResourceRepo();
+    await repo.commands.recordView(id);
+    await repo.handler.runOnce();
+    const house = await repo.findById(id);
+    return { views: house ? house.views : 0 };
+  } catch (err) {
+    console.error("Error while updating house view:", err);
+    throw err;
+  }
+}
+
 async function upload_house(files, body, userId) {
-  await connectDB();
   console.log("=== UPLOAD HOUSE SERVICE ===");
   console.log("User ID from middleware:", userId);
   console.log("Files:", files);
@@ -50,6 +85,8 @@ async function upload_house(files, body, userId) {
   if (!userId) {
     throw new Error("User not authenticated");
   }
+
+  const repo = getResourceRepo();
 
   const uploadBufferToCloudinary = (fileBuffer, folder = "default") => {
     return new Promise((resolve, reject) => {
@@ -100,26 +137,33 @@ async function upload_house(files, body, userId) {
 
   console.log("Uploaded URLs:", { thumbnailUrl, video, images });
 
-  const houseData = {
-    ...body,
-    thumbnail: thumbnailUrl,
-    video: video,
-    images: images,
-    price: Number(body.price),
-    bedroom: Number(body.bedroom),
-    bathroom: Number(body.bathroom),
+  const mongoose = require('mongoose');
+  const houseId = new mongoose.Types.ObjectId().toString();
+
+  // Create house via event sourcing
+  data = await repo.create({
+    _id: houseId,
     host: userId,
-  };
+    title: body.title,
+    description: body.description,
+    type: body.type,
+    category: body.category,
+    price: body.price,
+    address: body.address,
+    state: body.state,
+    lga: body.lga,
+    location: body.location,
+    bedrooms: Number(body.bedroom) || 1,
+    bathrooms: Number(body.bathroom) || 1,
+    furnishing: body.furnishing,
+    amenities: body.amenities ,
+    images: images,
+    thumbnail: thumbnailUrl || images[0]?.url,
+    video: video,
+  });
 
-  if (!houseData.thumbnail && images.length > 0) {
-    houseData.thumbnail = images[0].url;
-  }
-
-  console.log("Final house data to be saved:", houseData);
-  
-  const data = await newcrudRepositoryExtra.create(houseData);
-  console.log("Saved data:", data);
-  return data;
+  console.log("House created with ID:", houseId);
+  return await repo.findById(houseId);
 }
 
 module.exports = {

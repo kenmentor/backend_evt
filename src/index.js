@@ -7,6 +7,9 @@ require("dotenv").config();
 const route = require("./routes");
 const { badResponse } = require("./utility/response");
 
+// Initialize Event Sourcing
+const { initAll, getRepos } = require("./event-sourcing");
+
 const app = express();
 const http = require("http");
 const { Server } = require("socket.io");
@@ -63,11 +66,31 @@ process.on("uncaughtException", (err) => {
 });
 
 process.on("unhandledRejection", (reason, promise) => {
+  if (reason && reason.code === 'ECONNRESET') {
+    console.warn('⚠️ MongoDB connection reset. Will auto-reconnect...');
+    return;
+  }
   console.error("Unhandled Rejection at:", promise, "reason:", reason);
 });
 
 const PORT = process.env.PORT || 5036;
-server.listen(PORT, () => {
-  console.log(`Express server running on http://localhost:${PORT}`);
-  console.log(`Socket.io listening on port ${PORT}`);
-});
+
+async function startServer() {
+  try {
+    // Initialize Event Sourcing
+    console.log('Initializing Event Sourcing...');
+    await initAll();
+    console.log('Event Sourcing initialized successfully');
+    
+    // Start Express server
+    server.listen(PORT, () => {
+      console.log(`Express server running on http://localhost:${PORT}`);
+      console.log(`Socket.io listening on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

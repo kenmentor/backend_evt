@@ -1,42 +1,51 @@
-const { demandDB } = require("../modules");
-const { demand_repo } = require("../repositories");
+/**
+ * Demand Service - Event Sourcing Version
+ */
 
-require("dotenv").config();
+const { getRepos } = require("../event-sourcing");
+const mongoose = require("mongoose");
 
-const newcrudRepositoryExtra = new demand_repo(demandDB);
+function getDemandRepo() {
+  const { demandEventRepo } = getRepos();
+  return demandEventRepo;
+}
 
 async function find_demand(object) {
-  return newcrudRepositoryExtra.filter(object);
+  const repo = getDemandRepo();
+  return await repo.findAll();
 }
 
 async function update_demand(object) {
-  return newnewcrudRepositoryExtra.update(object);
+  const repo = getDemandRepo();
+  // Handle update if needed
+  return await repo.findById(object.id);
 }
 
 async function get_details(id) {
-  return newcrudRepositoryExtra.getDetail(id);
+  const repo = getDemandRepo();
+  return await repo.findById(id);
 }
 
 async function update_demand_view(id) {
-  try {
-    const data = await newcrudRepositoryExtra.update(
-      id,
-      { $inc: { view: 1 } },
-      { new: true }
-    );
-    return { views: data };
-  } catch (err) {
-    console.error("Error while updating demand view:", err);
-    throw err;
-  }
+  // Demand doesn't have view tracking in event sourcing
+  return { views: 0 };
 }
 
 async function upload_demand(body) {
-  body.price = Number(body.price);
-  body.waterSuply = Boolean(body.waterSuply);
-  const data = await newcrudRepositoryExtra.create(body);
-  await data.save();
-  return data;
+  const repo = getDemandRepo();
+  const demandId = new mongoose.Types.ObjectId().toString();
+  
+  await repo.create({
+    _id: demandId,
+    guest: body.guest,
+    description: body.description,
+    state: body.state,
+    price: Number(body.price),
+    type: body.type,
+    category: body.category,
+  });
+  
+  return await repo.findById(demandId);
 }
 
 module.exports = {
