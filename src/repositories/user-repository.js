@@ -1,54 +1,71 @@
-const crudRepository = require("./CRUD");
-class user_repo extends crudRepository {
-  constructor(module) {
-    super(module);
+const { getRepos } = require("../event-sourcing");
+
+class user_repo {
+  constructor() {
+    this._repo = null;
   }
+
+  get repo() {
+    if (!this._repo) {
+      const { userEventRepo } = getRepos();
+      this._repo = userEventRepo;
+    }
+    return this._repo;
+  }
+
+  async find(query) {
+    return this.repo.find(query);
+  }
+
+  async findOne(query) {
+    return this.repo.findOne(query);
+  }
+
+  async findById(id) {
+    return this.repo.findById(id);
+  }
+
+  async create(data) {
+    const userId = data._id || new (require("mongoose").Types.ObjectId)().toString();
+    await this.repo.create({ _id: userId, ...data });
+    return this.repo.findById(userId);
+  }
+
   async filter(filter) {
     try {
       let query = {};
 
-      // Keyword filters
-      if (filter.location && filter.location !== "undefined")
-        query.location = new RegExp(filter.location, "i");
-
-      if (filter.type && filter.type !== "undefined")
-        query.type = new RegExp(filter.type, "i");
-
-      if (filter.role && filter.role !== "undefined")
-        query.role = new RegExp(filter.role, "i");
-      if (query.id && filter.id !== "undefined")
-        query._id = { $ne: mongoose.Types.ObjectId(filter.id) };
-      // Price filter
-      const minAge = Number(filter.minAge);
-      const maxAge = Number(filter.maxAge);
-
-      if (!isNaN(minAge) || !isNaN(maxAge)) {
-        query.price = {};
-        if (!isNaN(minAge)) query.age.$gte = minAge;
-        if (!isNaN(maxAge)) query.age.$lte = maxAge;
+      if (filter.location && filter.location !== "undefined") {
+        const allUsers = await this.repo.findAll();
+        query = allUsers.filter(u => 
+          u.location && u.location.toLowerCase().includes(filter.location.toLowerCase())
+        );
+        return query;
       }
+
+      if (filter.type && filter.type !== "undefined") {
+        query.type = filter.type;
+      }
+
+      if (filter.role && filter.role !== "undefined") {
+        query.role = filter.role;
+      }
+
       if (filter.adminVerified) {
-        query.adminVerified = true
+        query.adminVerified = true;
       }
 
-      // Pagination
       const limit = Number(filter.limit) || 50;
       const page = Number(filter.bardge) || 1;
       const skip = (page - 1) * limit;
 
-      console.log("Final query:", query); // Debug ✅
-
-      return await this.module
-        .find(query)
-        .limit(limit)
-        .skip(skip)
-        .sort({ createdAt: -1 });
-
+      const results = await this.repo.find(filter);
+      return results.slice(skip, skip + limit);
     } catch (error) {
       console.error("Error filtering data:", error);
       throw error;
     }
   }
- 
 }
+
 module.exports = user_repo;

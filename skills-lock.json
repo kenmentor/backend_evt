@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "evtstore-reference": {
+      "source": "adebisi-fa/skills",
+      "sourceType": "github",
+      "computedHash": "f4c1a3f14fc9b323ee8b110dcd444f73572990dd3cb840cddc400434c81fae20"
+    }
+  }
+}
