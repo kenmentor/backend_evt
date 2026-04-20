@@ -1,25 +1,35 @@
-const mongoose = require("mongoose");
-const crud = require("./CRUD");
-const House = require("../modules/resource");
-const Booking = require("../modules/booking");
-const { check_payment, refund } = require("../utility/paystack-utils"); // hypothetical utility for Paystack
+const { getRepos } = require("../event-sourcing");
 
-class payment_repo extends crud {
-  constructor(module) {
-    super(module);
-    this.now = new Date();
-    this.twelveMonthsLater = new Date();
-    this.twelveMonthsLater.setMonth(this.now.getMonth() + 12);
+class payment_repo {
+  constructor() {
+    this._repo = null;
   }
 
-  /**
-   * Process a payment and handle all cases:
-   * - ✅ Normal payment (exact amount)
-   * - ⚠️ Overpayment (refund extra)
-   * - ❌ Underpayment (reject booking)
-   * - 🔁 Duplicate payment reference
-   * - 🧩 Full DB transaction rollback on error
-   */
+  get repo() {
+    if (!this._repo) {
+      const { paymentEventRepo } = getRepos();
+      this._repo = paymentEventRepo;
+    }
+    return this._repo;
+  }
+
+  async find(query) {
+    return this.repo.find(query);
+  }
+
+  async findOne(query) {
+    return this.repo.findOne(query);
+  }
+
+  async findById(id) {
+    return this.repo.findById(id);
+  }
+
+  async create(data) {
+    const paymentId = data._id || new (require("mongoose").Types.ObjectId)().toString();
+    await this.repo.create({ _id: paymentId, ...data });
+    return this.repo.findById(paymentId);
+  }
 
   async processPayment({
     guest,
@@ -31,214 +41,77 @@ class payment_repo extends crud {
     checkOut,
     paymentRef,
   }) {
-    console.log("Booking value type:", typeof Booking);
-    console.log("Booking keys:", Object.keys(Booking || {}));
-    console.log(
-      {
-        guest,
+    const existingPayment = await this.repo.findOne({ paymentRef });
+    if (existingPayment) {
+      throw new Error("Duplicate payment reference detected");
+    }
+
+    const paymentId = new (require("mongoose").Types.ObjectId)().toString();
+    const { check_payment, refund } = require("../utility/paystack-utils");
+
+    const checkPayment = await check_payment(paymentRef);
+    if (!checkPayment || checkPayment.status !== "success") {
+      throw new Error("Payment verification failed");
+    }
+
+    if (amount === price) {
+      await this.repo.create({
+        _id: paymentId,
         host,
+        guest,
         house,
         amount,
         price,
         checkIn,
         checkOut,
         paymentRef,
-      },
-      "controller"
-    );
-    const session = await mongoose.startSession();
-
-    try {
-      await session.withTransaction(async () => {
-        // 1️⃣ Prevent duplicate payment references
-        const existingPayment = await this.module.findOne(
-          { paymentRef: paymentRef },
-          null,
-          { session }
-        );
-        if (existingPayment) {
-          throw new Error("Duplicate payment reference detected");
-        }
-
-        // 2️⃣ Verify payment status from Paystack
-        const checkPayment = await check_payment(paymentRef);
-        if (!checkPayment || checkPayment.status !== "success") {
-          throw new Error("Payment verification failed");
-        }
-
-        // 3️⃣ Convert amount (kobo → naira)
-
-        console.log("💰 Paid:", amount, "| Expected:", price);
-
-        // 4️⃣ CASE: Exact Payment
-        console.log(
-          "/////////////////////////////////////////////////////////////////////////////////does it matchMedia",
-          amount === price,
-          "///////////////////////////////////////////////////////////////"
-        );
-        console.log();
-        if (amount === price) {
-          const payment = await this.module.create(
-            [
-              {
-                guest,
-
-                price,
-                checkIn,
-                checkOut,
-
-                host,
-                guest,
-                house,
-                amount: amount,
-                status: "success",
-                paymentStatus: "paid",
-                paymentRef: paymentRef,
-              },
-            ],
-
-            { session }
-          );
-          console.log(
-            "////////////////////////////////////////////////////////this is payment data ///////////////////////////////////////////////////////////// ",
-            payment
-          );
-          await Booking.create(
-            [
-              {
-                host,
-                guest,
-                house,
-                amount: amount,
-                status: "confirmed",
-                platformFee: amount * 0.05,
-                paymentId: payment[0]._id,
-                checkIn,
-                checkOut,
-              },
-            ],
-
-            { session }
-          );
-
-          const data = await House.updateOne(
-            { _id: new mongoose.Types.ObjectId(house) },
-            { available: false },
-            { session }
-          );
-          console.log(data);
-          console.log("✅ Payment processed successfully");
-          const verify = await House.findById(house).session(session);
-          console.log("After update (inside transaction):", verify);
-        }
-
-        // 5️⃣ CASE: Overpayment (refund extra)
-        else if (amount > price) {
-          const refundAmount = amount - price;
-
-          await this.module.create(
-            [
-              {
-                host,
-                guest,
-                house,
-                amount: amount,
-                refund: refundAmount,
-                status: "success",
-                paymentStatus: "overpaid",
-                paymentRef: paymentRef,
-                checkIn,
-                checkOut,
-                price,
-              },
-            ],
-
-            { session }
-          );
-
-          await Booking.create(
-            [
-              {
-                host,
-                guest,
-                house,
-                amount: amount,
-                status: "confirmed",
-                platformFee: price * 0.05,
-                paymentId: paymentRef,
-                checkIn,
-                checkOut,
-
-                price,
-              },
-            ],
-
-            { session }
-          );
-
-          await House.updateOne(
-            { _id: new mongoose.Types.ObjectId(house) },
-            { available: false },
-            { session }
-          );
-
-          await refund(paymentRef, refundAmount);
-          console.log(`⚠️ Overpayment detected. Refunded ₦${refundAmount}`);
-        }
-
-        // 6️⃣ CASE: Underpayment (reject)
-        else if (amount < price) {
-          await this.module.create(
-            [
-              {
-                host,
-                guest,
-                house,
-                amount: amount,
-                status: "failed",
-                paymentStatus: "underpaid",
-                paymentRef: paymentRef,
-                checkIn,
-                checkOut,
-                price,
-              },
-            ],
-            { session }
-          );
-          await refund(paymentRef, amount);
-          throw new Error(
-            `Underpayment detected: Paid ₦${amount}, expected ₦${price}`
-          );
-        } else {
-          this.create(
-            [
-              {
-                host,
-                guest,
-                house,
-                amount: amount,
-                status: "failed",
-                paymentStatus: "undefined",
-                paymentRef: paymentRef,
-                checkIn,
-                checkOut,
-                price,
-              },
-            ],
-
-            {
-              session,
-            }
-          );
-        }
-        // ✅ If we reach here, all is well
+        status: "success",
+        paymentStatus: "paid",
       });
-    } catch (err) {
-      console.error("❌ Payment transaction error:", err.message);
-      throw err;
-    } finally {
-      session.endSession();
+      await this.repo.commands.complete(paymentId);
+      await this.repo.handler.runOnce();
+      console.log("✅ Payment processed successfully");
+    } else if (amount > price) {
+      const refundAmount = amount - price;
+      await this.repo.create({
+        _id: paymentId,
+        host,
+        guest,
+        house,
+        amount,
+        refund: refundAmount,
+        price,
+        checkIn,
+        checkOut,
+        paymentRef,
+        status: "success",
+        paymentStatus: "overpaid",
+      });
+      await this.repo.commands.complete(paymentId);
+      await this.repo.handler.runOnce();
+      await refund(paymentRef, refundAmount);
+      console.log(`⚠️ Overpayment detected. Refunded ₦${refundAmount}`);
+    } else if (amount < price) {
+      await this.repo.create({
+        _id: paymentId,
+        host,
+        guest,
+        house,
+        amount,
+        price,
+        checkIn,
+        checkOut,
+        paymentRef,
+        status: "failed",
+        paymentStatus: "underpaid",
+      });
+      await this.repo.commands.fail(paymentId);
+      await this.repo.handler.runOnce();
+      await refund(paymentRef, amount);
+      throw new Error(`Underpayment detected: Paid ₦${amount}, expected ₦${price}`);
     }
+
+    return this.repo.findById(paymentId);
   }
 }
 
