@@ -1,33 +1,27 @@
 /**
- * Payment Event Repository - MongoDB Version
+ * Payment Event Repository - MongoDB Version (Updated)
+ * 
+ * Event naming: paymentInitiated, paymentCompleted, etc. (aggregate prefix + past tense)
  */
 
 const EventRepository = require('./EventRepository');
 
 const initialState = {
-  host: null,
-  guest: null,
-  house: null,
-  note: '',
-  amount: 0,
-  method: '',
-  refund: 0,
-  status: 'pending',
-  paymentStatus: 'pending',
-  paymentRef: '',
+  host: null, guest: null, house: null, note: '', amount: 0, method: '', refund: 0,
+  status: 'pending', paymentStatus: 'pending', paymentRef: '',
 };
 
 const fold = (evt, state) => {
   switch (evt.type) {
-    case 'initiated':
+    case 'paymentInitiated':
       return { host: evt.host, guest: evt.guest, house: evt.house, note: evt.note, amount: evt.amount, method: evt.method, paymentRef: evt.paymentRef };
-    case 'completed':
+    case 'paymentCompleted':
       return { status: 'completed', paymentStatus: 'completed' };
-    case 'failed':
+    case 'paymentFailed':
       return { status: 'failed', paymentStatus: 'failed' };
-    case 'refunded':
+    case 'paymentRefunded':
       return { status: 'refunded', paymentStatus: 'refunded', refund: evt.refundAmount };
-    case 'refundRequested':
+    case 'paymentRefundRequested':
       return { status: 'refund_requested' };
     default:
       return {};
@@ -35,42 +29,42 @@ const fold = (evt, state) => {
 };
 
 const eventHandlers = {
-  initiated: async (id, evt, repo) => {
+  paymentInitiated: async (id, evt, repo) => {
     await repo._addToReadModel(id, {
       host: evt.host, guest: evt.guest, house: evt.house, note: evt.note || '',
       amount: evt.amount, method: evt.method || '', refund: 0, status: 'pending', paymentStatus: 'pending', paymentRef: evt.paymentRef,
     });
   },
-  completed: async (id, _, repo) => repo._updateInReadModel(id, { status: 'completed', paymentStatus: 'completed' }),
-  failed: async (id, _, repo) => repo._updateInReadModel(id, { status: 'failed', paymentStatus: 'failed' }),
-  refunded: async (id, evt, repo) => repo._updateInReadModel(id, { status: 'refunded', paymentStatus: 'refunded', refund: evt.refundAmount }),
-  refundRequested: async (id, _, repo) => repo._updateInReadModel(id, { status: 'refund_requested' }),
+  paymentCompleted: async (id, _, repo) => repo._updateInReadModel(id, { status: 'completed', paymentStatus: 'completed' }),
+  paymentFailed: async (id, _, repo) => repo._updateInReadModel(id, { status: 'failed', paymentStatus: 'failed' }),
+  paymentRefunded: async (id, evt, repo) => repo._updateInReadModel(id, { status: 'refunded', paymentStatus: 'refunded', refund: evt.refundAmount }),
+  paymentRefundRequested: async (id, _, repo) => repo._updateInReadModel(id, { status: 'refund_requested' }),
 };
 
 const commands = {
   initiate: async (cmd, agg) => {
     if (agg.version > 0) throw new Error('Payment already initiated');
-    return { type: 'initiated', host: cmd.host, guest: cmd.guest, house: cmd.house, note: cmd.note, amount: cmd.amount, method: cmd.method, paymentRef: cmd.paymentRef };
+    return { type: 'paymentInitiated', host: cmd.host, guest: cmd.guest, house: cmd.house, note: cmd.note, amount: cmd.amount, method: cmd.method, paymentRef: cmd.paymentRef };
   },
   complete: async (_, agg) => {
     if (agg.version === 0) throw new Error('Payment not found');
     if (agg.status !== 'pending') throw new Error('Payment already processed');
-    return { type: 'completed' };
+    return { type: 'paymentCompleted' };
   },
   fail: async (_, agg) => {
     if (agg.version === 0) throw new Error('Payment not found');
     if (agg.status !== 'pending') throw new Error('Payment already processed');
-    return { type: 'failed' };
+    return { type: 'paymentFailed' };
   },
   requestRefund: async (_, agg) => {
     if (agg.version === 0) throw new Error('Payment not found');
     if (agg.status !== 'completed') throw new Error('Can only refund completed payments');
-    return { type: 'refundRequested' };
+    return { type: 'paymentRefundRequested' };
   },
   refund: async (cmd, agg) => {
     if (agg.version === 0) throw new Error('Payment not found');
     if (agg.status !== 'refund_requested') throw new Error('Refund not requested');
-    return { type: 'refunded', refundAmount: cmd.refundAmount };
+    return { type: 'paymentRefunded', refundAmount: cmd.refundAmount };
   },
 };
 

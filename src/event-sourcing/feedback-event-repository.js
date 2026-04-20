@@ -1,5 +1,6 @@
 /**
- * Feedback Event Repository - MongoDB Version
+ * Feedback Event Repository - MongoDB Version (Updated)
+ * Event naming: feedbackSubmitted
  */
 
 const EventRepository = require('./EventRepository');
@@ -8,17 +9,17 @@ const initialState = { userId: null, message: '' };
 
 const fold = (evt, state) => {
   switch (evt.type) {
-    case 'submitted': return { userId: evt.userId, message: evt.message };
+    case 'feedbackSubmitted': return { userId: evt.userId, message: evt.message };
     default: return {};
   }
 };
 
 const eventHandlers = {
-  submitted: async (id, evt, repo) => repo._addToReadModel(id, { userId: evt.userId, message: evt.message }),
+  feedbackSubmitted: async (id, evt, repo) => repo._addToReadModel(id, { userId: evt.userId, message: evt.message }),
 };
 
 const commands = {
-  submit: async (cmd, agg) => { if (agg.version > 0) throw new Error('Feedback already submitted'); return { type: 'submitted', userId: cmd.userId, message: cmd.message }; },
+  submit: async (cmd, agg) => { if (agg.version > 0) throw new Error('Feedback already submitted'); return { type: 'feedbackSubmitted', userId: cmd.userId, message: cmd.message }; },
 };
 
 let feedbackEventRepo = null;

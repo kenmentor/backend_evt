@@ -45,7 +45,7 @@ class EventRepository {
 
     const provider = getProvider();
 
-    const { domain, createHandler } = evtstore.createDomainV2(
+    const { domain, createHandler } = evtstore.createDomain(
       { provider },
       { [this.aggregateName]: this.storableAggregate }
     );

@@ -1,5 +1,6 @@
 /**
- * Analytics Event Repository - MongoDB Version
+ * Analytics Event Repository - MongoDB Version (Updated)
+ * Event naming: analyticsRecorded
  */
 
 const EventRepository = require('./EventRepository');
@@ -8,17 +9,17 @@ const initialState = { type: '', action: '', userId: null, metadata: {}, session
 
 const fold = (evt, state) => {
   switch (evt.type) {
-    case 'tracked': return { type: evt.type, action: evt.action, userId: evt.userId, metadata: evt.metadata, sessionId: evt.sessionId, ipAddress: evt.ipAddress, userAgent: evt.userAgent, referrer: evt.referrer, timestamp: new Date() };
+    case 'analyticsRecorded': return { type: evt.type, action: evt.action, userId: evt.userId, metadata: evt.metadata, sessionId: evt.sessionId, ipAddress: evt.ipAddress, userAgent: evt.userAgent, referrer: evt.referrer, timestamp: new Date() };
     default: return { type: evt.type, action: evt.action, userId: evt.userId, metadata: evt.metadata };
   }
 };
 
 const eventHandlers = {
-  tracked: async (id, evt, repo) => repo._addToReadModel(id, { type: evt.type, action: evt.action, userId: evt.userId, metadata: evt.metadata || {}, sessionId: evt.sessionId, ipAddress: evt.ipAddress, userAgent: evt.userAgent, referrer: evt.referrer, timestamp: new Date() }),
+  analyticsRecorded: async (id, evt, repo) => repo._addToReadModel(id, { type: evt.type, action: evt.action, userId: evt.userId, metadata: evt.metadata || {}, sessionId: evt.sessionId, ipAddress: evt.ipAddress, userAgent: evt.userAgent, referrer: evt.referrer, timestamp: new Date() }),
 };
 
 const commands = {
-  track: async (cmd, agg) => { if (agg.version > 0) throw new Error('Analytics already tracked'); return { type: 'tracked', action: cmd.action, userId: cmd.userId, metadata: cmd.metadata, sessionId: cmd.sessionId, ipAddress: cmd.ipAddress, userAgent: cmd.userAgent, referrer: cmd.referrer }; },
+  track: async (cmd, agg) => { if (agg.version > 0) throw new Error('Analytics already recorded'); return { type: 'analyticsRecorded', action: cmd.action, userId: cmd.userId, metadata: cmd.metadata, sessionId: cmd.sessionId, ipAddress: cmd.ipAddress, userAgent: cmd.userAgent, referrer: cmd.referrer }; },
 };
 
 let analyticsEventRepo = null;

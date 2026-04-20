@@ -1,37 +1,31 @@
 /**
- * Booking Event Repository - MongoDB Version
+ * Booking Event Repository - MongoDB Version (Updated)
+ * 
+ * Event naming: bookingCreated, bookingConfirmed, etc. (aggregate prefix + past tense)
  */
 
 const EventRepository = require('./EventRepository');
 
 const initialState = {
-  host: null,
-  guest: null,
-  house: null,
-  amount: 0,
-  status: 'pending',
-  paymentId: null,
-  checkIn: null,
-  checkOut: null,
-  platformFee: 0,
-  expiredDate: null,
+  host: null, guest: null, house: null, amount: 0, status: 'pending',
+  paymentId: null, checkIn: null, checkOut: null, platformFee: 0, expiredDate: null,
 };
 
 const fold = (evt, state) => {
   switch (evt.type) {
-    case 'created':
+    case 'bookingCreated':
       return { host: evt.host, guest: evt.guest, house: evt.house, amount: evt.amount, paymentId: evt.paymentId, checkIn: evt.checkIn, checkOut: evt.checkOut, platformFee: evt.platformFee };
-    case 'confirmed':
+    case 'bookingConfirmed':
       return { status: 'confirmed' };
-    case 'cancelled':
+    case 'bookingCancelled':
       return { status: 'cancelled' };
-    case 'completed':
+    case 'bookingCompleted':
       return { status: 'completed' };
-    case 'expired':
+    case 'bookingExpired':
       return { status: 'expired' };
-    case 'paymentUpdated':
+    case 'bookingPaymentUpdated':
       return { paymentId: evt.paymentId };
-    case 'datesChanged':
+    case 'bookingDatesChanged':
       return { checkIn: evt.checkIn, checkOut: evt.checkOut };
     default:
       return {};
@@ -39,7 +33,7 @@ const fold = (evt, state) => {
 };
 
 const eventHandlers = {
-  created: async (id, evt, repo) => {
+  bookingCreated: async (id, evt, repo) => {
     const expiredDate = new Date();
     expiredDate.setDate(expiredDate.getDate() + 3);
     await repo._addToReadModel(id, {
@@ -47,48 +41,48 @@ const eventHandlers = {
       paymentId: evt.paymentId, checkIn: evt.checkIn, checkOut: evt.checkOut, platformFee: evt.platformFee, expiredDate,
     });
   },
-  confirmed: async (id, _, repo) => repo._updateInReadModel(id, { status: 'confirmed' }),
-  cancelled: async (id, _, repo) => repo._updateInReadModel(id, { status: 'cancelled' }),
-  completed: async (id, _, repo) => repo._updateInReadModel(id, { status: 'completed' }),
-  expired: async (id, _, repo) => repo._updateInReadModel(id, { status: 'expired' }),
-  paymentUpdated: async (id, evt, repo) => repo._updateInReadModel(id, { paymentId: evt.paymentId }),
-  datesChanged: async (id, evt, repo) => repo._updateInReadModel(id, { checkIn: evt.checkIn, checkOut: evt.checkOut }),
+  bookingConfirmed: async (id, _, repo) => repo._updateInReadModel(id, { status: 'confirmed' }),
+  bookingCancelled: async (id, _, repo) => repo._updateInReadModel(id, { status: 'cancelled' }),
+  bookingCompleted: async (id, _, repo) => repo._updateInReadModel(id, { status: 'completed' }),
+  bookingExpired: async (id, _, repo) => repo._updateInReadModel(id, { status: 'expired' }),
+  bookingPaymentUpdated: async (id, evt, repo) => repo._updateInReadModel(id, { paymentId: evt.paymentId }),
+  bookingDatesChanged: async (id, evt, repo) => repo._updateInReadModel(id, { checkIn: evt.checkIn, checkOut: evt.checkOut }),
 };
 
 const commands = {
   create: async (cmd, agg) => {
     if (agg.version > 0) throw new Error('Booking already exists');
-    return { type: 'created', host: cmd.host, guest: cmd.guest, house: cmd.house, amount: cmd.amount, paymentId: cmd.paymentId, checkIn: cmd.checkIn, checkOut: cmd.checkOut, platformFee: cmd.platformFee };
+    return { type: 'bookingCreated', host: cmd.host, guest: cmd.guest, house: cmd.house, amount: cmd.amount, paymentId: cmd.paymentId, checkIn: cmd.checkIn, checkOut: cmd.checkOut, platformFee: cmd.platformFee };
   },
   confirm: async (_, agg) => {
     if (agg.version === 0) throw new Error('Booking not found');
     if (agg.status !== 'pending') throw new Error('Booking cannot be confirmed');
-    return { type: 'confirmed' };
+    return { type: 'bookingConfirmed' };
   },
   cancel: async (_, agg) => {
     if (agg.version === 0) throw new Error('Booking not found');
     if (['completed', 'cancelled'].includes(agg.status)) throw new Error('Booking cannot be cancelled');
-    return { type: 'cancelled' };
+    return { type: 'bookingCancelled' };
   },
   complete: async (_, agg) => {
     if (agg.version === 0) throw new Error('Booking not found');
     if (agg.status !== 'confirmed') throw new Error('Booking must be confirmed first');
-    return { type: 'completed' };
+    return { type: 'bookingCompleted' };
   },
   expire: async (_, agg) => {
     if (agg.version === 0) throw new Error('Booking not found');
     if (agg.status !== 'pending') return;
-    return { type: 'expired' };
+    return { type: 'bookingExpired' };
   },
   updatePayment: async (cmd, agg) => {
     if (agg.version === 0) throw new Error('Booking not found');
     if (agg.paymentId === cmd.paymentId) return;
-    return { type: 'paymentUpdated', paymentId: cmd.paymentId };
+    return { type: 'bookingPaymentUpdated', paymentId: cmd.paymentId };
   },
   changeDates: async (cmd, agg) => {
     if (agg.version === 0) throw new Error('Booking not found');
     if (agg.status !== 'pending') throw new Error('Cannot change dates for confirmed booking');
-    return { type: 'datesChanged', checkIn: cmd.checkIn, checkOut: cmd.checkOut };
+    return { type: 'bookingDatesChanged', checkIn: cmd.checkIn, checkOut: cmd.checkOut };
   },
 };
 
