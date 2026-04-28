@@ -8,6 +8,11 @@ export const analyticsAgg = createAggregate<AnalyticsEvt, AnalyticsAgg, 'analyti
     eventType: '',
     timestamp: new Date(),
     metadata: {},
+    action: undefined,
+    sessionId: undefined,
+    ipAddress: undefined,
+    userAgent: undefined,
+    referrer: undefined,
   }),
   fold: (evt, prev): AnalyticsAgg => {
     switch (evt.type) {
@@ -18,6 +23,11 @@ export const analyticsAgg = createAggregate<AnalyticsEvt, AnalyticsAgg, 'analyti
           eventType: evt.eventType,
           timestamp: new Date(),
           metadata: evt.metadata || {},
+          action: evt.action,
+          sessionId: evt.sessionId,
+          ipAddress: evt.ipAddress,
+          userAgent: evt.userAgent,
+          referrer: evt.referrer,
         };
 
       default:

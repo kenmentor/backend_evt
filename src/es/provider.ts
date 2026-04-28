@@ -6,11 +6,11 @@ let initialized = false;
 export async function initProvider() {
   if (initialized) return provider!;
 
-  const { getDb } = await import('./mongo-connection');
+  const { getDb } = await import('../event-sourcing/mongo-connection');
   const db = getDb();
 
-  const eventCollection = db.collection('events_store');
-  const bookmarkCollection = db.collection('events_bookmarks');
+  const eventCollection = db.collection('events_store') as any;
+  const bookmarkCollection = db.collection('events_bookmarks') as any;
 
   await migrate(eventCollection, bookmarkCollection);
 

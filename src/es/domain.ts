@@ -1,25 +1,25 @@
-const { createDomain } = require('evtstore');
-const { getProvider } = require('./provider');
-const { userAgg } = require('./aggregates/user');
-const { tourAgg } = require('./aggregates/tour');
-const { bookingAgg } = require('./aggregates/booking');
-const { resourceAgg } = require('./aggregates/resource');
-const { paymentAgg } = require('./aggregates/payment');
-const { conversationAgg, messageAgg } = require('./aggregates/chat');
-const { requestAgg } = require('./aggregates/request');
-const { favoriteAgg } = require('./aggregates/favorite');
-const { feedbackAgg } = require('./aggregates/feedback');
-const { demandAgg } = require('./aggregates/demand');
-const { payoutAgg } = require('./aggregates/payout');
-const { analyticsAgg } = require('./aggregates/analytics');
+import { createDomain } from 'evtstore';
+import { getESProvider } from './provider';
+import { userAgg } from './aggregates/user';
+import { tourAgg } from './aggregates/tour';
+import { bookingAgg } from './aggregates/booking';
+import { resourceAgg } from './aggregates/resource';
+import { paymentAgg } from './aggregates/payment';
+import { conversationAgg, messageAgg } from './aggregates/chat';
+import { requestAgg } from './aggregates/request';
+import { favoriteAgg } from './aggregates/favorite';
+import { feedbackAgg } from './aggregates/feedback';
+import { demandAgg } from './aggregates/demand';
+import { payoutAgg } from './aggregates/payout';
+import { analyticsAgg } from './aggregates/analytics';
 
-let domain = null;
-let createHandler = null;
+export let domain: any = null;
+export let createHandler: any = null;
 
-function initDomain() {
+export function initDomain() {
   if (domain && createHandler) return { domain, createHandler };
 
-  const provider = getProvider();
+  const provider = getESProvider();
 
   const result = createDomain(
     { provider },
@@ -47,24 +47,16 @@ function initDomain() {
   return { domain, createHandler };
 }
 
-function getDomain() {
+export function getDomain() {
   if (!domain) {
     throw new Error('Domain not initialized. Call initDomain() first.');
   }
   return domain;
 }
 
-function getCreateHandler() {
+export function getCreateHandler() {
   if (!createHandler) {
     throw new Error('Domain not initialized. Call initDomain() first.');
   }
   return createHandler;
 }
-
-module.exports = {
-  initDomain,
-  getDomain,
-  getCreateHandler,
-  domain: null,
-  createHandler: null,
-};

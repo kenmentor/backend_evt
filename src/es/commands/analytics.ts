@@ -10,6 +10,11 @@ export const analyticsCmd = createCommands<AnalyticsEvt, AnalyticsAgg, Analytics
       userId: cmd.userId,
       eventType: cmd.eventType,
       metadata: cmd.metadata,
+      action: cmd.action,
+      sessionId: cmd.sessionId,
+      ipAddress: cmd.ipAddress,
+      userAgent: cmd.userAgent,
+      referrer: cmd.referrer,
       performedBy: cmd.performedBy,
     };
   },
